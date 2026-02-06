@@ -56,7 +56,7 @@ Goals: Social features and waste reduction tools
 Sprint Deliverable: ✅ Users can share recipe results, get expiration alerts, browse community feed
 Testing Focus: E2E tests for complete user journeys, performance testing
 
-## Sprint 5: Polish, Testing & Documentation (Week 9-10: Apr 7-20)
+### Sprint 5: Polish, Testing & Documentation (Week 9-10: Apr 7-20)
 Goals: Production-ready application with comprehensive documentation
 ALL TEAM - Focus on Quality
 Week 9: Testing & Bug Fixes
