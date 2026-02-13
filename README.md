@@ -45,7 +45,7 @@ Choose LLM early (recommend: Claude 3.5 Sonnet or GPT-4 Vision)
 
 Risk Mitigation:
 - Parallel track: Keep manual entry as primary method
-- Budget for LLM API costs (~$50-100 for testing phase)
+- Budget for LLM API costs (~-100 for testing phase)
 - Have fallback to manual entry if parsing fails
 - Don't block other features on receipt scanning success
 
@@ -63,3 +63,10 @@ Week 9: Testing & Bug Fixes
 Week 10: Documentation & Deployment
 
 Sprint Deliverable: ✅ Production-ready app, complete documentation, presentation materials
+
+## Run Locally
+
+```bash
+npm install
+npm run dev
+```
