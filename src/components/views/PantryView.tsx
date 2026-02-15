@@ -10,7 +10,7 @@ import type { Ingredient } from '@/App';
 
 interface PantryViewProps {
   ingredients: Ingredient[];
-  onAdd: (name: string) => void;
+  onAdd: (name: string, quantity?: string) => void;
   onRemove: (id: string) => void;
 }
 
@@ -78,7 +78,7 @@ export function PantryView({ ingredients, onAdd, onRemove }: PantryViewProps) {
                 <div className="flex flex-wrap gap-2">
                   {ingredients.map((ingredient) => (
                     <Badge key={ingredient.id} variant="secondary" className="text-sm py-1 pl-3 pr-1 flex items-center gap-1">
-                      {ingredient.name}
+                      {ingredient.quantity ? `${ingredient.name} (${ingredient.quantity})` : ingredient.name}
                       <Button
                         variant="ghost"
                         size="icon"

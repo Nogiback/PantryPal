@@ -70,3 +70,33 @@ Sprint Deliverable: ✅ Production-ready app, complete documentation, presentati
 npm install
 npm run dev
 ```
+
+## AWS Bedrock Vision Setup (Key Hidden on Server)
+
+Feature flow:
+- Open `Scan Receipt` tab.
+- Upload an image (receipt, grocery photo, pantry/spice rack).
+- Click `Analyze with AWS`.
+- Review and edit extracted `name` and `quantity`.
+- Save to pantry.
+- JSON extraction is shown in the scan results panel.
+
+Create a `.env` file in project root:
+
+```bash
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
+PORT=8787
+```
+
+Run two terminals in project root:
+
+```bash
+npm run dev:api
+```
+
+```bash
+npm run dev
+```

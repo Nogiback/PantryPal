@@ -8,6 +8,7 @@ import { RecipesView } from '@/components/views/RecipesView';
 export type Ingredient = {
   id: string;
   name: string;
+  quantity?: string;
 };
 
 function App() {
@@ -15,11 +16,12 @@ function App() {
   const [activeTab, setActiveTab] = useState<'pantry' | 'scan' | 'recipes'>('pantry');
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
 
-  const addIngredient = (name: string) => {
+  const addIngredient = (name: string, quantity?: string) => {
     if (!name.trim()) return;
     const newIngredient: Ingredient = {
       id: crypto.randomUUID(),
       name: name.trim(),
+      quantity: quantity?.trim() || undefined,
     };
     setIngredients((prev) => [...prev, newIngredient]);
   };
@@ -41,7 +43,7 @@ function App() {
           onRemove={removeIngredient} 
         />
       )}
-      {activeTab === 'scan' && <ScanView onAddIngredients={(ings) => ings.forEach(name => addIngredient(name))} />}
+      {activeTab === 'scan' && <ScanView onAddIngredients={(ings) => ings.forEach((item) => addIngredient(item.name, item.quantity))} />}
       {activeTab === 'recipes' && <RecipesView ingredients={ingredients} />}
     </Layout>
   );
