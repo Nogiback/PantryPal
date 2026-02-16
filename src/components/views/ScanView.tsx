@@ -19,6 +19,11 @@ interface AwsResponse {
   text?: string;
 }
 
+interface PreparedImagePayload {
+  base64: string;
+  mimeType: string;
+}
+
 export function ScanView({ onAddIngredients }: ScanViewProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -28,6 +33,7 @@ export function ScanView({ onAddIngredients }: ScanViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [scanSuccessMessage, setScanSuccessMessage] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [showRawJson, setShowRawJson] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -67,7 +73,7 @@ export function ScanView({ onAddIngredients }: ScanViewProps) {
     return 'Failed to analyze image. Please try again.';
   };
 
-  const fileToBase64 = (file: File) =>
+  const blobToBase64 = (blob: Blob) =>
     new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
@@ -85,9 +91,71 @@ export function ScanView({ onAddIngredients }: ScanViewProps) {
 
         resolve(base64);
       };
-      reader.onerror = () => reject(new Error('Unable to read selected image.'));
-      reader.readAsDataURL(file);
+      reader.onerror = () => reject(new Error('Unable to read selected image data.'));
+      reader.readAsDataURL(blob);
     });
+
+  const resizeImageIfNeeded = (file: File, maxDimension = 1500) =>
+    new Promise<Blob>((resolve, reject) => {
+      const objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+
+      image.onload = () => {
+        const width = image.naturalWidth;
+        const height = image.naturalHeight;
+        const largestDimension = Math.max(width, height);
+
+        if (!largestDimension || largestDimension <= maxDimension) {
+          URL.revokeObjectURL(objectUrl);
+          resolve(file);
+          return;
+        }
+
+        const scale = maxDimension / largestDimension;
+        const targetWidth = Math.max(1, Math.round(width * scale));
+        const targetHeight = Math.max(1, Math.round(height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('Unable to resize selected image.'));
+          return;
+        }
+
+        context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+        const outputMimeType = file.type || 'image/jpeg';
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(objectUrl);
+            if (!blob) {
+              reject(new Error('Unable to resize selected image.'));
+              return;
+            }
+            resolve(blob);
+          },
+          outputMimeType,
+          0.9,
+        );
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Unable to load selected image.'));
+      };
+
+      image.src = objectUrl;
+    });
+
+  const prepareImagePayload = async (file: File): Promise<PreparedImagePayload> => {
+    const processedImage = await resizeImageIfNeeded(file, 1500);
+    const base64 = await blobToBase64(processedImage);
+    const mimeType = processedImage.type || file.type || 'image/jpeg';
+    return { base64, mimeType };
+  };
 
   const safeParseJsonItems = (rawText: string): ExtractedItem[] => {
     const cleaned = rawText
@@ -109,15 +177,15 @@ export function ScanView({ onAddIngredients }: ScanViewProps) {
   };
 
   const extractItemsWithAws = async (file: File): Promise<ExtractedItem[]> => {
-    const base64Data = await fileToBase64(file);
+    const imagePayload = await prepareImagePayload(file);
     const response = await fetch('/api/scan/aws', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        imageBase64: base64Data,
-        mimeType: file.type || 'image/jpeg',
+        imageBase64: imagePayload.base64,
+        mimeType: imagePayload.mimeType,
       }),
     });
 
@@ -195,6 +263,7 @@ export function ScanView({ onAddIngredients }: ScanViewProps) {
     setError(null);
     setScanSuccessMessage(null);
     setIsSaved(false);
+    setShowRawJson(false);
     setScanProgress(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -381,8 +450,15 @@ export function ScanView({ onAddIngredients }: ScanViewProps) {
                   )}
 
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">JSON Extraction</p>
-                    <pre className="text-xs bg-muted rounded-md p-3 overflow-auto max-h-40">{extractedJson}</pre>
+                    <Button variant="outline" onClick={() => setShowRawJson((prev) => !prev)} className="w-full">
+                      {showRawJson ? 'Hide raw JSON' : 'Show raw JSON'}
+                    </Button>
+                    {showRawJson && (
+                      <>
+                        <p className="text-sm font-medium">JSON Extraction</p>
+                        <pre className="text-xs bg-muted rounded-md p-3 overflow-auto max-h-40">{extractedJson}</pre>
+                      </>
+                    )}
                   </div>
                 </>
               )}
