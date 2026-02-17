@@ -6,22 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Ingredient } from '@/App';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { addIngredient, removeIngredient } from '@/store/slices/ingredientsSlice';
 
-interface PantryViewProps {
-  ingredients: Ingredient[];
-  onAdd: (name: string) => void;
-  onRemove: (id: string) => void;
-}
-
-export function PantryView({ ingredients, onAdd, onRemove }: PantryViewProps) {
+export function PantryView() {
   const [inputValue, setInputValue] = useState('');
+  const ingredients = useAppSelector((state) => state.ingredients.items);
+  const dispatch = useAppDispatch();
 
   const handleAdd = () => {
     if (inputValue.trim()) {
-      onAdd(inputValue);
+      dispatch(addIngredient(inputValue));
       setInputValue('');
     }
+  };
+
+  const handleRemove = (id: string) => {
+    dispatch(removeIngredient(id));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -83,7 +84,7 @@ export function PantryView({ ingredients, onAdd, onRemove }: PantryViewProps) {
                         variant="ghost"
                         size="icon"
                         className="h-5 w-5 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => onRemove(ingredient.id)}
+                        onClick={() => handleRemove(ingredient.id)}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>

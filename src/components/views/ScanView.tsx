@@ -3,14 +3,13 @@ import { motion } from 'framer-motion';
 import { Upload, Loader2, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useAppDispatch } from '@/store/hooks';
+import { addIngredient } from '@/store/slices/ingredientsSlice';
 
-interface ScanViewProps {
-  onAddIngredients: (ingredients: string[]) => void;
-}
-
-export function ScanView({ onAddIngredients }: ScanViewProps) {
+export function ScanView() {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedItems, setScannedItems] = useState<string[]>([]);
+  const dispatch = useAppDispatch();
 
   const handleSimulateScan = () => {
     setIsScanning(true);
@@ -20,7 +19,7 @@ export function ScanView({ onAddIngredients }: ScanViewProps) {
     setTimeout(() => {
       const mockDetectedIngredients = ['Eggs', 'Milk', 'Cheddar Cheese', 'Spinach'];
       setScannedItems(mockDetectedIngredients);
-      onAddIngredients(mockDetectedIngredients);
+      mockDetectedIngredients.forEach(ing => dispatch(addIngredient(ing)));
       setIsScanning(false);
     }, 2500);
   };

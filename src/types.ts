@@ -1,0 +1,80 @@
+export interface Ingredient {
+  id: string;
+  name: string;
+}
+
+export interface Recipe {
+  id: number;
+  title: string;
+  image: string;
+  imageType: string;
+  usedIngredientCount: number;
+  missedIngredientCount: number;
+  missedIngredients: IngredientInfo[];
+  usedIngredients: IngredientInfo[];
+  unusedIngredients: IngredientInfo[];
+  likes: number;
+}
+
+export interface IngredientInfo {
+  id: number;
+  amount: number;
+  unit: string;
+  unitLong: string;
+  unitShort: string;
+  aisle: string;
+  name: string;
+  original: string;
+  originalName: string;
+  meta: string[];
+  image: string;
+}
+
+export interface Video {
+  title: string;
+  youTubeId: string;
+  rating: number;
+  views: number;
+  thumbnail: string;
+  length: number;
+  shortTitle: string;
+}
+
+export interface AnalyzedInstruction {
+  name: string;
+  steps: InstructionStep[];
+}
+
+export interface InstructionStep {
+  number: number;
+  step: string;
+  ingredients: Ingredient[];
+  equipment: Equipment[];
+}
+
+export interface Equipment {
+  id: number;
+  name: string;
+  image: string;
+}
+
+export interface RecipeDetails extends Recipe {
+  analyzedInstructions: AnalyzedInstruction[];
+  summary: string;
+  readyInMinutes: number;
+  servings: number;
+  sourceUrl: string;
+  sourceName?: string;
+  diets: string[];
+  dishTypes: string[];
+  extendedIngredients: IngredientInfo[];
+  vegetarian: boolean;
+  vegan: boolean;
+  glutenFree: boolean;
+  dairyFree: boolean;
+  veryHealthy: boolean;
+  cheap: boolean;
+}
+
+
+

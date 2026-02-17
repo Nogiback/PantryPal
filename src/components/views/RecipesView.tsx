@@ -1,142 +1,162 @@
+
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { ChefHat, ExternalLink } from 'lucide-react';
-import type { Ingredient } from '@/App';
+import { ChefHat, Loader2, Search } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchRecipes, fetchRecipeDetails } from '@/store/slices/recipesSlice';
+import type { IngredientInfo } from '@/types';
+import { RecipeDetailsModal } from '@/components/RecipeDetailsModal';
 
-interface RecipesViewProps {
-  ingredients: Ingredient[];
-}
+export function RecipesView() {
+  const dispatch = useAppDispatch();
+  const ingredients = useAppSelector((state) => state.ingredients.items);
+  const { items: recipes, status, error, selectedRecipeDetails, detailsStatus } = useAppSelector((state) => state.recipes);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-interface Recipe {
-  id: string;
-  title: string;
-  description: string;
-  requiredIngredients: string[];
-}
+  useEffect(() => {
+    if (ingredients.length > 0 && status === 'idle') {
+       const ingredientNames = ingredients.map(i => i.name);
+       dispatch(fetchRecipes(ingredientNames));
+    }
+  }, [ingredients, status, dispatch]);
 
-const MOCK_RECIPES: Recipe[] = [
-  {
-    id: '1',
-    title: 'Pasta Carbonara',
-    description: 'A classic Roman pasta dish made with eggs, hard cheese, cured pork, and black pepper.',
-    requiredIngredients: ['Pasta', 'Eggs', 'Cheese', 'Bacon', 'Pepper'],
-  },
-  {
-    id: '2',
-    title: 'Grilled Cheese Sandwich',
-    description: 'Bread, cheese, and butter fried until golden and melted.',
-    requiredIngredients: ['Bread', 'Cheese', 'Butter'],
-  },
-  {
-    id: '3',
-    title: 'Spinach & Tomato Salad',
-    description: 'Fresh spinach tossed with tomatoes and olive oil.',
-    requiredIngredients: ['Spinach', 'Tomato', 'Olive Oil'],
-  },
-  {
-    id: '4',
-    title: 'Scrambled Eggs',
-    description: 'Fluffy eggs beaten and fried.',
-    requiredIngredients: ['Eggs', 'Butter', 'Salt'],
-  },
-  {
-    id: '5',
-    title: 'Tomato Soup',
-    description: 'Warm and comforting soup made from fresh tomatoes.',
-    requiredIngredients: ['Tomato', 'Onion', 'Garlic', 'Cream'],
-  }
-];
+  const handleSearch = () => {
+    if (ingredients.length > 0) {
+      const ingredientNames = ingredients.map(i => i.name);
+      dispatch(fetchRecipes(ingredientNames));
+    }
+  };
 
-export function RecipesView({ ingredients }: RecipesViewProps) {
-  // Simple normalization for matching (lowercase, trim)
-  const userIngredientNames = new Set(ingredients.map(i => i.name.toLowerCase().trim()));
+  const handleViewRecipe = (id: number) => {
+      dispatch(fetchRecipeDetails(id));
+      setIsDetailsOpen(true);
+  };
 
-  const matchedRecipes = MOCK_RECIPES.map(recipe => {
-    const matched = recipe.requiredIngredients.filter(req => 
-      userIngredientNames.has(req.toLowerCase())
-    );
-    const missing = recipe.requiredIngredients.filter(req => 
-      !userIngredientNames.has(req.toLowerCase())
-    );
-    
-    // Calculate a simple score: percentage of ingredients owned
-    const matchPercentage = matched.length / recipe.requiredIngredients.length;
-
-    return { ...recipe, matched, missing, matchPercentage };
-  }).filter(r => r.matched.length > 0) // Only show if at least 1 ingredient is matched
-    .sort((a, b) => b.matchPercentage - a.matchPercentage);
+  const handleCloseDetails = () => {
+      setIsDetailsOpen(false);
+  };
 
   return (
     <motion.div 
-      className="space-y-6"
+      className="space-y-6 h-[calc(100vh-8rem)]"
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}
     >
       <div className="flex flex-col space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Suggested Recipes</h2>
-        <p className="text-muted-foreground">Based on your pantry ({ingredients.length} items).</p>
+        <div className="flex justify-between items-start">
+            <div>
+                <h2 className="text-3xl font-bold tracking-tight">Suggested Recipes</h2>
+                <p className="text-muted-foreground">Based on your pantry ({ingredients.length} items).</p>
+            </div>
+            <Button onClick={handleSearch} disabled={ingredients.length === 0 || status === 'loading'}>
+                {status === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                Find Recipes
+            </Button>
+        </div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-12rem)]">
-        {matchedRecipes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border-2 border-dashed rounded-lg">
-            <ChefHat className="h-12 w-12 mb-4 opacity-20" />
-            <h3 className="text-lg font-semibold">No matches yet</h3>
-            <p>Add more ingredients to your pantry to see suggestions!</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-6">
-            {matchedRecipes.map((recipe) => (
-              <Card key={recipe.id} className="flex flex-col">
-                <CardHeader>
-                  <CardTitle className="flex justify-between items-start gap-2">
-                    {recipe.title}
-                    <Badge variant={recipe.matchPercentage === 1 ? 'default' : 'secondary'}>
-                      {Math.round(recipe.matchPercentage * 100)}% Match
-                    </Badge>
-                  </CardTitle>
-                  <CardDescription>{recipe.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium mb-2">You Have:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {recipe.matched.map(ing => (
-                          <Badge key={ing} variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                            {ing}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    {recipe.missing.length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium mb-2 text-muted-foreground">Missing:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {recipe.missing.map(ing => (
-                            <Badge key={ing} variant="outline" className="text-muted-foreground">
-                              {ing}
-                            </Badge>
-                          ))}
+      {error && (
+        <div className="p-4 text-red-500 bg-red-50 rounded-md">
+            Error: {error}
+        </div>
+      )}
+
+      {/* Main Content Area - Full width now */}
+      <div className="h-full min-h-0">
+         <ScrollArea className="h-full pr-4">
+            {recipes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border-2 border-dashed rounded-lg bg-muted/20 h-full">
+                <ChefHat className="h-12 w-12 mb-4 opacity-20" />
+                <h3 className="text-lg font-semibold">No recipes found</h3>
+                <p className="text-sm">Add ingredients to your pantry and we'll find matching recipes!</p>
+            </div>
+            ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-20">
+                {recipes.map((recipe) => (
+                    <motion.div
+                    key={recipe.id}
+                    whileHover={{ y: -5 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                    >
+                    <Card className="flex flex-col h-full overflow-hidden shadow-sm hover:shadow-md transition-shadow border-muted/60">
+                        <div className="relative h-48 w-full overflow-hidden">
+                        <img 
+                            src={recipe.image} 
+                            alt={recipe.title}
+                            className="object-cover w-full h-full transition-transform duration-500 hover:scale-105"
+                            loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+                            <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 drop-shadow-sm">
+                                {recipe.title}
+                            </h3>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter>
-                   <Button variant="outline" className="w-full">
-                     <ExternalLink className="mr-2 h-4 w-4" /> View Instructions
-                   </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
-      </ScrollArea>
+                        </div>
+                        
+                        <CardContent className="flex-1 p-4 space-y-4">
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-2">
+                            <span className="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-100">
+                                {recipe.usedIngredientCount} Used
+                            </span>
+                            <span className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2 py-1 rounded-full border border-orange-100">
+                                {recipe.missedIngredientCount} Missing
+                            </span>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pantry Match</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {recipe.usedIngredients.map((ing: IngredientInfo) => (
+                                <Badge key={ing.id} variant="secondary" className="bg-green-100/50 text-green-800 hover:bg-green-100 border-0">
+                                    {ing.name}
+                                </Badge>
+                                ))}
+                            </div>
+                            </div>
+                            
+                            {recipe.missedIngredientCount > 0 && (
+                            <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">You Need</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                {recipe.missedIngredients.map((ing: IngredientInfo) => (
+                                    <Badge key={ing.id} variant="outline" className="text-muted-foreground border-dashed">
+                                    {ing.name}
+                                    </Badge>
+                                ))}
+                                </div>
+                            </div>
+                            )}
+                        </div>
+                        </CardContent>
+                        <div className="p-4 pt-0 mt-auto">
+                        <Button 
+                            variant="default" 
+                            className="w-full bg-primary/90 hover:bg-primary"
+                            onClick={() => handleViewRecipe(recipe.id)}
+                        >
+                            View Recipe
+                        </Button>
+                        </div>
+                    </Card>
+                    </motion.div>
+                ))}
+            </div>
+            )}
+        </ScrollArea>
+      </div>
+
+      <RecipeDetailsModal 
+        recipe={selectedRecipeDetails} 
+        isOpen={isDetailsOpen} 
+        onClose={handleCloseDetails} 
+        isLoading={detailsStatus === 'loading'}
+      />
     </motion.div>
   );
 }
