@@ -4,10 +4,8 @@ import { Upload, Loader2, CheckCircle2, Trash2, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-interface ScanViewProps {
-  onAddIngredients: (ingredients: { name: string; quantity?: string }[]) => void;
-}
+import { useAppDispatch } from '@/store/hooks';
+import { addIngredient } from '@/store/slices/ingredientsSlice';
 
 interface ExtractedItem {
   id: string;
@@ -24,7 +22,8 @@ interface PreparedImagePayload {
   mimeType: string;
 }
 
-export function ScanView({ onAddIngredients }: ScanViewProps) {
+export function ScanView() {
+  const dispatch = useAppDispatch();
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -283,7 +282,7 @@ export function ScanView({ onAddIngredients }: ScanViewProps) {
       return;
     }
 
-    onAddIngredients(cleanedItems);
+    cleanedItems.forEach((item) => dispatch(addIngredient(item)));
     setIsSaved(true);
   };
 

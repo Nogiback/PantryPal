@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { LayoutDashboard,  ScanLine,  ChefHat, Menu } from 'lucide-react';
+import { LayoutDashboard, ScanLine, ChefHat, Menu, VideoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -7,19 +8,20 @@ import { cn } from '@/lib/utils';
 interface NavItem {
   label: string;
   icon: React.ReactNode;
-  id: 'pantry' | 'scan' | 'recipes';
+  id: 'pantry' | 'scan' | 'recipes' | 'videos';
 }
 
 const navItems: NavItem[] = [
   { label: 'My Pantry', icon: <LayoutDashboard className="h-4 w-4" />, id: 'pantry' },
   { label: 'Scan Receipt', icon: <ScanLine className="h-4 w-4" />, id: 'scan' },
   { label: 'Find Recipes', icon: <ChefHat className="h-4 w-4" />, id: 'recipes' },
+  { label: 'Recipe Videos', icon: <VideoIcon className="h-4 w-4" />, id: 'videos' },
 ];
 
 interface LayoutProps {
   children: React.ReactNode;
   activeTab: string;
-  onTabChange: (tab: 'pantry' | 'scan' | 'recipes') => void;
+  onTabChange: (tab: 'pantry' | 'scan' | 'recipes' | 'videos') => void;
 }
 
 // Helper component for navigation content
@@ -29,7 +31,7 @@ function NavContent({
   onMobileClose 
 }: { 
   activeTab: string; 
-  onTabChange: (tab: 'pantry' | 'scan' | 'recipes') => void;
+  onTabChange: (tab: 'pantry' | 'scan' | 'recipes' | 'videos') => void;
   onMobileClose?: () => void;
 }) {
   return (
