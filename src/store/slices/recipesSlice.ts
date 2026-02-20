@@ -98,14 +98,15 @@ const recipesSlice = createSlice({
       .addCase(addIngredient, (state) => {
         state.status = 'idle';
         state.videoStatus = 'idle';
+        state.items = [];
       })
       .addCase(removeIngredient, (state) => {
         state.status = 'idle';
         state.videoStatus = 'idle';
+        state.items = [];
       });
   },
 });
 
 export const { clearSelectedRecipe } = recipesSlice.actions;
 export default recipesSlice.reducer;
-

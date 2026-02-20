@@ -18,8 +18,8 @@ export function RecipesView() {
 
   useEffect(() => {
     if (ingredients.length > 0 && status === 'idle') {
-       const ingredientNames = ingredients.map(i => i.name);
-       dispatch(fetchRecipes(ingredientNames));
+      const ingredientNames = ingredients.map(i => i.name);
+      dispatch(fetchRecipes(ingredientNames));
     }
   }, [ingredients, status, dispatch]);
 
