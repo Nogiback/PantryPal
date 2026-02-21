@@ -342,7 +342,7 @@ export function ScanView() {
                   className="w-full rounded-lg overflow-hidden border cursor-pointer"
                   onClick={() => !isScanning && fileInputRef.current?.click()}
                 >
-                  <img src={previewUrl} alt="Uploaded grocery" className="w-full h-[360px] object-contain bg-muted" />
+                  <img src={previewUrl} alt="Uploaded grocery" className="block w-full h-auto" />
                 </button>
               )}
 
