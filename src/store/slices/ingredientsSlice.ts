@@ -9,17 +9,18 @@ const initialState: IngredientsState = {
   items: [],
 };
 
+type AddIngredientPayload = { name: string; quantity?: string };
+
 export const ingredientsSlice = createSlice({
   name: 'ingredients',
   initialState,
   reducers: {
-    addIngredient: (state, action: PayloadAction<string | { name: string; quantity?: string }>) => {
-      const payload = typeof action.payload === 'string' ? { name: action.payload } : action.payload;
-      if (!payload.name.trim()) return;
+    addIngredient: (state, action: PayloadAction<AddIngredientPayload>) => {
+      if (!action.payload.name.trim()) return;
       state.items.push({
         id: crypto.randomUUID(),
-        name: payload.name.trim(),
-        quantity: payload.quantity?.trim(),
+        name: action.payload.name.trim(),
+        quantity: action.payload.quantity?.trim(),
       });
     },
     removeIngredient: (state, action: PayloadAction<string>) => {
