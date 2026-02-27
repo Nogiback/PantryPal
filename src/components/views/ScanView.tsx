@@ -24,6 +24,7 @@ interface PreparedImagePayload {
 
 export function ScanView() {
   const dispatch = useAppDispatch();
+  // UI state for scan lifecycle and user feedback.
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -35,6 +36,8 @@ export function ScanView() {
   const [showRawJson, setShowRawJson] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Create a temporary browser URL so the user can preview the chosen image.
+  // Revoke it on cleanup to avoid memory leaks.
   useEffect(() => {
     if (!selectedFile) {
       setPreviewUrl(null);
@@ -49,6 +52,8 @@ export function ScanView() {
     };
   }, [selectedFile]);
 
+  // Build a "clean output preview" from current editable rows.
+  // This is what we show in the Raw JSON panel.
   const extractedJson = useMemo(
     () =>
       JSON.stringify(
@@ -64,6 +69,7 @@ export function ScanView() {
     [scannedItems],
   );
 
+  // Normalize unknown errors into a readable message for the UI.
   const getErrorMessage = (err: unknown) => {
     if (err instanceof Error) {
       return err.message;
@@ -72,6 +78,8 @@ export function ScanView() {
     return 'Failed to analyze image. Please try again.';
   };
 
+  // Convert image bytes into base64 because backend expects JSON payload,
+  // not multipart/form-data.
   const blobToBase64 = (blob: Blob) =>
     new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -94,6 +102,8 @@ export function ScanView() {
       reader.readAsDataURL(blob);
     });
 
+  // Resize large images before upload to improve speed and lower model payload size.
+  // If the image is already small enough, return it as-is.
   const resizeImageIfNeeded = (file: File, maxDimension = 1500) =>
     new Promise<Blob>((resolve, reject) => {
       const objectUrl = URL.createObjectURL(file);
@@ -149,6 +159,7 @@ export function ScanView() {
       image.src = objectUrl;
     });
 
+  // Prepare the final image payload used by the backend scan endpoint.
   const prepareImagePayload = async (file: File): Promise<PreparedImagePayload> => {
     const processedImage = await resizeImageIfNeeded(file, 1500);
     const base64 = await blobToBase64(processedImage);
@@ -156,6 +167,8 @@ export function ScanView() {
     return { base64, mimeType };
   };
 
+  // Parse model output safely and tolerate markdown code fences if returned.
+  // Then normalize each row into the local editable item shape.
   const safeParseJsonItems = (rawText: string): ExtractedItem[] => {
     const cleaned = rawText
       .replace(/^```json\s*/i, '')
@@ -172,9 +185,12 @@ export function ScanView() {
         name: typeof item.name === 'string' ? item.name.trim() : '',
         quantity: typeof item.quantity === 'string' ? item.quantity.trim() : '1',
       }))
+      // Ignore empty names so users only see valid candidate rows.
       .filter((item) => item.name.length > 0);
   };
 
+  // Send image to backend endpoint that talks to AWS Bedrock,
+  // then parse the returned JSON text into editable rows.
   const extractItemsWithAws = async (file: File): Promise<ExtractedItem[]> => {
     const imagePayload = await prepareImagePayload(file);
     const response = await fetch('/api/scan/aws', {
@@ -207,6 +223,11 @@ export function ScanView() {
     return items;
   };
 
+  // Main scan action:
+  // 1) validate input
+  // 2) reset old result state
+  // 3) run scan request
+  // 4) update UI with success or error
   const handleAnalyzeImage = async () => {
     if (!selectedFile) {
       setError('Please upload an image first.');
@@ -242,6 +263,7 @@ export function ScanView() {
     }
   };
 
+  // Keep row edits local until user explicitly saves to pantry.
   const updateItem = (id: string, field: 'name' | 'quantity', value: string) => {
     setScannedItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
@@ -256,6 +278,7 @@ export function ScanView() {
     setScannedItems((prev) => [...prev, { id: crypto.randomUUID(), name: '', quantity: '1' }]);
   };
 
+  // Full reset for scan workflow and hidden file input.
   const clearScan = () => {
     setSelectedFile(null);
     setScannedItems([]);
@@ -269,6 +292,8 @@ export function ScanView() {
     }
   };
 
+  // Commit edited rows into Redux pantry store.
+  // We trim user input and skip empty names.
   const saveToPantry = () => {
     const cleanedItems = scannedItems
       .map((item) => ({
