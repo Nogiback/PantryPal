@@ -4,6 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 
+// Lightweight .env loader so this file can run directly with `node`
+// (without adding dotenv as an extra dependency).
 const loadDotEnv = () => {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -42,6 +44,7 @@ const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || 'amazon.nova-lite-v1:0';
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
 
+// Small helper for consistent JSON + CORS responses.
 const sendJson = (res, status, body) => {
   res.writeHead(status, {
     'Content-Type': 'application/json',
@@ -52,6 +55,7 @@ const sendJson = (res, status, body) => {
   res.end(JSON.stringify(body));
 };
 
+// Read the full request body with a size guard to prevent oversized uploads.
 const readRequestBody = (req) =>
   new Promise((resolve, reject) => {
     let raw = '';
@@ -115,6 +119,8 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'POST' && req.url === '/api/scan/aws') {
     try {
+      // Expected payload from frontend:
+      // { imageBase64: "....", mimeType: "image/jpeg|image/png|image/webp" }
       const raw = await readRequestBody(req);
       const payload = JSON.parse(raw);
       const imageBase64 = typeof payload.imageBase64 === 'string' ? payload.imageBase64 : '';
@@ -125,6 +131,7 @@ const server = createServer(async (req, res) => {
         return;
       }
 
+      // Strong prompt to force structured JSON output that frontend can parse reliably.
       const prompt = [
         '# Grocery List Extraction Expert',
         '## Task',
@@ -164,6 +171,7 @@ const server = createServer(async (req, res) => {
           ? 'webp'
           : 'jpeg';
 
+      // Bedrock Converse call with multimodal content (text prompt + image bytes).
       const command = new ConverseCommand({
         modelId: BEDROCK_MODEL_ID,
         messages: [
@@ -193,6 +201,7 @@ const server = createServer(async (req, res) => {
         return;
       }
 
+      // Frontend parses this `text` into item rows.
       sendJson(res, 200, { text });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown server error.';

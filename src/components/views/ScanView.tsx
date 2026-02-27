@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Upload, Loader2, CheckCircle2, Trash2, Plus } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useAppDispatch } from '@/store/hooks';
-import { addIngredient } from '@/store/slices/ingredientsSlice';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Upload, Loader2, CheckCircle2, Trash2, Plus } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAppDispatch } from "@/store/hooks";
+import { addIngredient } from "@/store/slices/ingredientsSlice";
 
 interface ExtractedItem {
   id: string;
@@ -31,7 +37,9 @@ export function ScanView() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [scannedItems, setScannedItems] = useState<ExtractedItem[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [scanSuccessMessage, setScanSuccessMessage] = useState<string | null>(null);
+  const [scanSuccessMessage, setScanSuccessMessage] = useState<string | null>(
+    null,
+  );
   const [isSaved, setIsSaved] = useState(false);
   const [showRawJson, setShowRawJson] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,7 +68,7 @@ export function ScanView() {
         {
           items: scannedItems.map((item) => ({
             name: item.name,
-            quantity: item.quantity || '1',
+            quantity: item.quantity || "1",
           })),
         },
         null,
@@ -75,7 +83,7 @@ export function ScanView() {
       return err.message;
     }
 
-    return 'Failed to analyze image. Please try again.';
+    return "Failed to analyze image. Please try again.";
   };
 
   // Convert image bytes into base64 because backend expects JSON payload,
@@ -85,20 +93,21 @@ export function ScanView() {
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result;
-        if (typeof result !== 'string') {
-          reject(new Error('Unable to process selected image.'));
+        if (typeof result !== "string") {
+          reject(new Error("Unable to process selected image."));
           return;
         }
 
-        const base64 = result.split(',')[1];
+        const base64 = result.split(",")[1];
         if (!base64) {
-          reject(new Error('Unable to process selected image.'));
+          reject(new Error("Unable to process selected image."));
           return;
         }
 
         resolve(base64);
       };
-      reader.onerror = () => reject(new Error('Unable to read selected image data.'));
+      reader.onerror = () =>
+        reject(new Error("Unable to read selected image data."));
       reader.readAsDataURL(blob);
     });
 
@@ -123,25 +132,25 @@ export function ScanView() {
         const scale = maxDimension / largestDimension;
         const targetWidth = Math.max(1, Math.round(width * scale));
         const targetHeight = Math.max(1, Math.round(height * scale));
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = targetWidth;
         canvas.height = targetHeight;
 
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext("2d");
         if (!context) {
           URL.revokeObjectURL(objectUrl);
-          reject(new Error('Unable to resize selected image.'));
+          reject(new Error("Unable to resize selected image."));
           return;
         }
 
         context.drawImage(image, 0, 0, targetWidth, targetHeight);
 
-        const outputMimeType = file.type || 'image/jpeg';
+        const outputMimeType = file.type || "image/jpeg";
         canvas.toBlob(
           (blob) => {
             URL.revokeObjectURL(objectUrl);
             if (!blob) {
-              reject(new Error('Unable to resize selected image.'));
+              reject(new Error("Unable to resize selected image."));
               return;
             }
             resolve(blob);
@@ -153,17 +162,18 @@ export function ScanView() {
 
       image.onerror = () => {
         URL.revokeObjectURL(objectUrl);
-        reject(new Error('Unable to load selected image.'));
+        reject(new Error("Unable to load selected image."));
       };
 
       image.src = objectUrl;
     });
 
-  // Prepare the final image payload used by the backend scan endpoint.
-  const prepareImagePayload = async (file: File): Promise<PreparedImagePayload> => {
+  const prepareImagePayload = async (
+    file: File,
+  ): Promise<PreparedImagePayload> => {
     const processedImage = await resizeImageIfNeeded(file, 1500);
     const base64 = await blobToBase64(processedImage);
-    const mimeType = processedImage.type || file.type || 'image/jpeg';
+    const mimeType = processedImage.type || file.type || "image/jpeg";
     return { base64, mimeType };
   };
 
@@ -171,19 +181,22 @@ export function ScanView() {
   // Then normalize each row into the local editable item shape.
   const safeParseJsonItems = (rawText: string): ExtractedItem[] => {
     const cleaned = rawText
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/\s*```$/i, '')
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
       .trim();
 
-    const parsed = JSON.parse(cleaned) as { items?: Array<{ name?: unknown; quantity?: unknown }> };
+    const parsed = JSON.parse(cleaned) as {
+      items?: Array<{ name?: unknown; quantity?: unknown }>;
+    };
     const rows = Array.isArray(parsed.items) ? parsed.items : [];
 
     return rows
       .map((item) => ({
         id: crypto.randomUUID(),
-        name: typeof item.name === 'string' ? item.name.trim() : '',
-        quantity: typeof item.quantity === 'string' ? item.quantity.trim() : '1',
+        name: typeof item.name === "string" ? item.name.trim() : "",
+        quantity:
+          typeof item.quantity === "string" ? item.quantity.trim() : "1",
       }))
       // Ignore empty names so users only see valid candidate rows.
       .filter((item) => item.name.length > 0);
@@ -193,10 +206,10 @@ export function ScanView() {
   // then parse the returned JSON text into editable rows.
   const extractItemsWithAws = async (file: File): Promise<ExtractedItem[]> => {
     const imagePayload = await prepareImagePayload(file);
-    const response = await fetch('/api/scan/aws', {
-      method: 'POST',
+    const response = await fetch("/api/scan/aws", {
+      method: "POST",
       headers: {
-        'content-type': 'application/json',
+        "content-type": "application/json",
       },
       body: JSON.stringify({
         imageBase64: imagePayload.base64,
@@ -206,18 +219,20 @@ export function ScanView() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`AWS request failed (${response.status}): ${errorText}. Make sure dev API server is running.`);
+      throw new Error(
+        `AWS request failed (${response.status}): ${errorText}. Make sure dev API server is running.`,
+      );
     }
 
     const data = (await response.json()) as AwsResponse;
     const rawText = data.text;
     if (!rawText) {
-      throw new Error('AWS model returned an empty response.');
+      throw new Error("AWS model returned an empty response.");
     }
 
     const items = safeParseJsonItems(rawText);
     if (items.length === 0) {
-      throw new Error('No grocery items were detected in this image.');
+      throw new Error("No grocery items were detected in this image.");
     }
 
     return items;
@@ -230,7 +245,7 @@ export function ScanView() {
   // 4) update UI with success or error
   const handleAnalyzeImage = async () => {
     if (!selectedFile) {
-      setError('Please upload an image first.');
+      setError("Please upload an image first.");
       return;
     }
 
@@ -252,7 +267,9 @@ export function ScanView() {
       const items = await extractItemsWithAws(selectedFile);
       setScannedItems(items);
       setScanProgress(100);
-      setScanSuccessMessage(`Scan finished. Found ${items.length} item(s). Review and edit below.`);
+      setScanSuccessMessage(
+        `Scan finished. Found ${items.length} item(s). Review and edit below.`,
+      );
     } catch (err) {
       setScannedItems([]);
       setScanProgress(0);
@@ -262,9 +279,11 @@ export function ScanView() {
       setIsScanning(false);
     }
   };
-
-  // Keep row edits local until user explicitly saves to pantry.
-  const updateItem = (id: string, field: 'name' | 'quantity', value: string) => {
+  const updateItem = (
+    id: string,
+    field: "name" | "quantity",
+    value: string,
+  ) => {
     setScannedItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
     );
@@ -275,7 +294,10 @@ export function ScanView() {
   };
 
   const addManualItem = () => {
-    setScannedItems((prev) => [...prev, { id: crypto.randomUUID(), name: '', quantity: '1' }]);
+    setScannedItems((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), name: "", quantity: "1" },
+    ]);
   };
 
   // Full reset for scan workflow and hidden file input.
@@ -288,7 +310,7 @@ export function ScanView() {
     setShowRawJson(false);
     setScanProgress(0);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -298,12 +320,12 @@ export function ScanView() {
     const cleanedItems = scannedItems
       .map((item) => ({
         name: item.name.trim(),
-        quantity: item.quantity.trim() || '1',
+        quantity: item.quantity.trim() || "1",
       }))
       .filter((item) => item.name.length > 0);
 
     if (cleanedItems.length === 0) {
-      setError('Add at least one valid item before saving.');
+      setError("Add at least one valid item before saving.");
       return;
     }
 
@@ -319,9 +341,12 @@ export function ScanView() {
       transition={{ duration: 0.5 }}
     >
       <div className="flex flex-col space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Scan Grocery Image</h2>
+        <h2 className="text-3xl font-bold tracking-tight">
+          Scan Grocery Image
+        </h2>
         <p className="text-muted-foreground">
-          Upload image on the left, compare extracted items on the right, then save to pantry.
+          Upload image on the left, compare extracted items on the right, then
+          save to pantry.
         </p>
       </div>
 
@@ -329,7 +354,10 @@ export function ScanView() {
         <Card>
           <CardHeader>
             <CardTitle>Image Upload</CardTitle>
-            <CardDescription>Upload a receipt, grocery photo, pantry shelf, or spice rack image.</CardDescription>
+            <CardDescription>
+              Upload a receipt, grocery photo, pantry shelf, or spice rack
+              image.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -358,7 +386,9 @@ export function ScanView() {
                   </div>
                   <div className="text-center space-y-1">
                     <p className="font-medium">Click to upload image</p>
-                    <p className="text-xs text-muted-foreground">JPG, PNG, WEBP</p>
+                    <p className="text-xs text-muted-foreground">
+                      JPG, PNG, WEBP
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -367,14 +397,20 @@ export function ScanView() {
                   className="w-full rounded-lg overflow-hidden border cursor-pointer"
                   onClick={() => !isScanning && fileInputRef.current?.click()}
                 >
-                  <img src={previewUrl} alt="Uploaded grocery" className="block w-full h-auto" />
+                  <img
+                    src={previewUrl}
+                    alt="Uploaded grocery"
+                    className="block w-full h-auto"
+                  />
                 </button>
               )}
 
               {(isScanning || scanProgress > 0) && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{isScanning ? 'Scanning image...' : 'Scan complete'}</span>
+                    <span>
+                      {isScanning ? "Scanning image..." : "Scan complete"}
+                    </span>
                     <span>{scanProgress}%</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -387,17 +423,25 @@ export function ScanView() {
               )}
 
               <div className="flex gap-2">
-                <Button onClick={handleAnalyzeImage} disabled={isScanning || !selectedFile} className="flex-1">
+                <Button
+                  onClick={handleAnalyzeImage}
+                  disabled={isScanning || !selectedFile}
+                  className="flex-1"
+                >
                   {isScanning ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Scanning...
                     </>
                   ) : (
-                    'Scan Image'
+                    "Scan Image"
                   )}
                 </Button>
-                <Button variant="outline" onClick={clearScan} disabled={isScanning}>
+                <Button
+                  variant="outline"
+                  onClick={clearScan}
+                  disabled={isScanning}
+                >
                   Reset
                 </Button>
               </div>
@@ -410,7 +454,9 @@ export function ScanView() {
         <Card>
           <CardHeader>
             <CardTitle>Extraction Result</CardTitle>
-            <CardDescription>Edit item name and quantity before saving.</CardDescription>
+            <CardDescription>
+              Edit item name and quantity before saving.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -434,15 +480,22 @@ export function ScanView() {
                   </div>
                   <div className="space-y-2">
                     {scannedItems.map((item) => (
-                      <div key={item.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center rounded-md border p-2">
+                      <div
+                        key={item.id}
+                        className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center rounded-md border p-2"
+                      >
                         <Input
                           value={item.name}
-                          onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                          onChange={(e) =>
+                            updateItem(item.id, "name", e.target.value)
+                          }
                           placeholder="Item name"
                         />
                         <Input
                           value={item.quantity}
-                          onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
+                          onChange={(e) =>
+                            updateItem(item.id, "quantity", e.target.value)
+                          }
                           placeholder="Quantity"
                         />
                         <Button
@@ -458,7 +511,11 @@ export function ScanView() {
                     ))}
                   </div>
 
-                  <Button variant="outline" onClick={addManualItem} className="w-full">
+                  <Button
+                    variant="outline"
+                    onClick={addManualItem}
+                    className="w-full"
+                  >
                     <Plus className="h-4 w-4" /> Add Row
                   </Button>
 
@@ -469,18 +526,26 @@ export function ScanView() {
                   {isSaved && (
                     <div className="flex items-center gap-2 text-green-700 bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
                       <CheckCircle2 className="h-5 w-5" />
-                      <span className="font-medium">Pantry updated successfully.</span>
+                      <span className="font-medium">
+                        Pantry updated successfully.
+                      </span>
                     </div>
                   )}
 
                   <div className="space-y-2">
-                    <Button variant="outline" onClick={() => setShowRawJson((prev) => !prev)} className="w-full">
-                      {showRawJson ? 'Hide raw JSON' : 'Show raw JSON'}
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowRawJson((prev) => !prev)}
+                      className="w-full"
+                    >
+                      {showRawJson ? "Hide raw JSON" : "Show raw JSON"}
                     </Button>
                     {showRawJson && (
                       <>
                         <p className="text-sm font-medium">JSON Extraction</p>
-                        <pre className="text-xs bg-muted rounded-md p-3 overflow-auto max-h-40">{extractedJson}</pre>
+                        <pre className="text-xs bg-muted rounded-md p-3 overflow-auto max-h-40">
+                          {extractedJson}
+                        </pre>
                       </>
                     )}
                   </div>

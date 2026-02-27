@@ -9,40 +9,11 @@ const API_KEYS = (import.meta.env.VITE_SPOONACULAR_API_KEY || "")
 
 console.log(`Spoonacular Service: Loaded ${API_KEYS.length} API keys.`);
 
-// Cache configuration
-const CACHE_PREFIX = "pantrypal_api_v3_";
-const TTL_RECIPES = 60 * 60 * 1000; // 1 hour
-const TTL_VIDEOS = 3 * 24 * 60 * 60 * 1000; // 3 days
-const TTL_DETAILS = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-const getFromCache = (key: string) => {
-  try {
-    const item = localStorage.getItem(CACHE_PREFIX + key);
-    if (!item) return null;
-    const { data, expiry } = JSON.parse(item);
-    if (Date.now() > expiry) {
-      localStorage.removeItem(CACHE_PREFIX + key);
-      return null;
-    }
-    return data;
-  } catch {
-    return null;
-  }
-};
-
-const saveToCache = (key: string, data: any, ttl: number) => {
-  try {
-    const item = { data, expiry: Date.now() + ttl };
-    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(item));
-  } catch (e) {
-    console.warn("Failed to save to cache:", e);
-  }
-};
-
-// Key rotation state management
 const STORAGE_KEY = "pantrypal_api_key_index";
+
+//Fetching the current stored index and converting to number using base-10
 let currentKeyIndex = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-if (isNaN(currentKeyIndex) || currentKeyIndex >= API_KEYS.length) {
+if (Number.isNaN(currentKeyIndex) || currentKeyIndex >= API_KEYS.length) {
   currentKeyIndex = 0;
 }
 
@@ -50,84 +21,40 @@ const getCurrentKey = () => API_KEYS[currentKeyIndex];
 
 const rotateKey = (failedKey: string) => {
   if (API_KEYS.length <= 1) return false;
-
-  // Check if the key that failed is still the current one
-  // (Prevents double-rotation when multiple parallel requests fail)
   if (getCurrentKey() === failedKey) {
     currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
     localStorage.setItem(STORAGE_KEY, currentKeyIndex.toString());
     console.log(`Rotating to API Key #${currentKeyIndex + 1}`);
-    return true;
   }
-
   return true;
 };
 
-// Centralized fetch wrapper with rotation logic and caching
-async function fetchWithRotation(
+async function fetchWithRotation<T>(
   label: string,
   urlBuilder: (apiKey: string) => string,
-  mockFallback: any,
-  cacheTtl?: number,
-): Promise<any> {
+  mockData: T,
+): Promise<T> {
   if (API_KEYS.length === 0) {
     console.warn(`${label}: No Spoonacular API Key found. Using MOCK data.`);
-    return mockFallback;
+    return mockData;
   }
-
-  // 1. Generate a stable cache key (URL without the apiKey part)
-  // We remove the apiKey parameter entirely to make the key unique to the query/params
-  const rawUrl = urlBuilder("STABLE_KEY");
-  const stableUrl = rawUrl
-    .replace(/[?&]apiKey=[^&]+/, "") // Remove apiKey param
-    .replace(/\?&/, "?") // Clean up if apiKey was first param
-    .replace(/&&+/, "&") // Clean up multiple ampersands
-    .replace(/[&?]$/, ""); // Clean up trailing delimiters
-
-  // We use the stableUrl itself as a suffix for the cache key.
-  // LocalStorage keys are strings, so we don't strictly need btoa if we prefix it safely.
-  // However, to keep keys manageable and avoid issues with any weird chars,
-  // we'll just use a sanitized version of the string or the string itself.
-  const cacheKey = stableUrl;
-
-  // 2. Try Cache First
-  if (cacheTtl) {
-    const cachedData = getFromCache(cacheKey);
-    if (cachedData) return cachedData;
-  }
-
-  const maxAttempts = API_KEYS.length;
   let attempts = 0;
-
-  while (attempts < maxAttempts) {
+  while (attempts < API_KEYS.length) {
     const apiKey = getCurrentKey();
-    const url = urlBuilder(apiKey);
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(urlBuilder(apiKey));
 
       if (response.ok) {
-        const data = await response.json();
-
-        // Save to cache on success
-        if (cacheTtl) {
-          saveToCache(cacheKey, data, cacheTtl);
-        }
-
-        return data;
+        return (await response.json()) as T;
       }
 
-      // Handle quota (402) or invalid key (401)
-      if (response.status === 402 || response.status === 401) {
-        console.warn(
-          `${label}: Key #${currentKeyIndex + 1} failed (${response.status}).`,
-        );
+      if (response.status === 401 || response.status === 402) {
         rotateKey(apiKey);
         attempts++;
         continue;
       }
 
-      // Other HTTP errors
       const errorText = await response.text();
       console.error(`${label}: API Error ${response.status}:`, errorText);
       break;
@@ -135,48 +62,41 @@ async function fetchWithRotation(
       console.error(`${label}: Network error:`, error);
       break;
     }
-    attempts++;
   }
-
   console.warn(`${label}: All keys failed. Falling back to MOCK data.`);
-  return mockFallback;
+  return mockData;
 }
+
+const normalizeIngredients = (ingredients: string[]) =>
+  Array.from(new Set(ingredients.map((name) => name.trim()).filter(Boolean)));
 
 export const getRecipesByIngredients = async (
   ingredients: string[],
 ): Promise<Recipe[]> => {
-  if (ingredients.length === 0) return [];
-
-  const normalizedIngredients = Array.from(
-    new Set(ingredients.map((name) => name.trim()).filter(Boolean)),
-  ).sort((a, b) => a.localeCompare(b));
-
+  const normalizedIngredients = normalizeIngredients(ingredients);
   if (normalizedIngredients.length === 0) return [];
-
+  //Convert text into URL Safe format
   const ingredientsString = encodeURIComponent(normalizedIngredients.join(","));
-
   return fetchWithRotation(
     "Recipes",
     (apiKey: string) =>
       `${BASE_URL}/recipes/findByIngredients?ingredients=${ingredientsString}&number=12&ranking=1&ignorePantry=true&apiKey=${apiKey}`,
     MOCK_RECIPES,
-    TTL_RECIPES,
   );
 };
 
 export const searchFoodVideos = async (
   query: string,
 ): Promise<{ videos: Video[] }> => {
-  if (!query) return { videos: [] };
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery) return { videos: [] };
 
-  const data = await fetchWithRotation(
+  return fetchWithRotation(
     "Videos",
     (apiKey: string) =>
-      `${BASE_URL}/food/videos/search?query=${query}&number=12&apiKey=${apiKey}`,
+      `${BASE_URL}/food/videos/search?query=${encodeURIComponent(normalizedQuery)}&number=12&apiKey=${apiKey}`,
     { videos: MOCK_VIDEOS },
-    TTL_VIDEOS,
   );
-  return data;
 };
 
 export const getRecipeInformation = async (
@@ -187,6 +107,5 @@ export const getRecipeInformation = async (
     (apiKey: string) =>
       `${BASE_URL}/recipes/${id}/information?includeNutrition=false&apiKey=${apiKey}`,
     { ...MOCK_RECIPE_DETAILS, id },
-    TTL_DETAILS,
   );
 };

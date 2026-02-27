@@ -1,22 +1,25 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { SidebarVideos } from '@/components/SidebarVideos';
 import { VideoIcon } from 'lucide-react';
 import { fetchVideos } from '@/store/slices/recipesSlice';
+import { VideoList } from '@/components/VideoList';
+import { VideoModal } from '@/components/VideoModal';
+import type { Video } from '@/types';
 
 export function VideosView() {
   const dispatch = useAppDispatch();
   const ingredients = useAppSelector((state) => state.ingredients.items);
   const { videos, videoStatus } = useAppSelector((state) => state.recipes);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
 
   useEffect(() => {
-    if (ingredients.length > 0 && videoStatus === 'idle') {
-      const query = ingredients.map(i => i.name).join(' ');
-      dispatch(fetchVideos(query));
+    if (ingredients.length > 0) {
+      const ingredientNames = ingredients.map(i => i.name);
+      dispatch(fetchVideos(ingredientNames));
     }
-  }, [ingredients, videoStatus, dispatch]);
+  }, [ingredients, dispatch]);
 
   return (
     <motion.div 
@@ -43,10 +46,19 @@ export function VideosView() {
           </div>
         ) : (
           <div className="pb-20">
-             <SidebarVideos videos={videos} />
+             <VideoList videos={videos} onVideoClick={setSelectedVideo} />
           </div>
         )}
       </div>
+
+      {selectedVideo && (
+        <VideoModal
+          videoId={selectedVideo.youTubeId}
+          title={selectedVideo.title}
+          isOpen={!!selectedVideo}
+          onClose={() => setSelectedVideo(null)}
+        />
+      )}
     </motion.div>
   );
 }
