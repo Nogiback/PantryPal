@@ -378,7 +378,7 @@ export function ScanView() {
                   <img
                     src={previewUrl}
                     alt="Uploaded grocery"
-                    className="w-full h-90 object-contain bg-muted"
+                    className="block w-full h-auto"
                   />
                 </button>
               )}
