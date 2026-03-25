@@ -313,6 +313,16 @@ const filterIncludeAgainstRestrictions = (includeIngredients, allergies, exclude
       return false;
     }
 
+    // Loose exclude match: exclude="beef" should remove "ground beef", etc.
+    for (const exclude of normalizedExclude) {
+      if (!exclude) continue;
+      const re = new RegExp(`(^|\\s)${escapeRegex(exclude)}(\\s|$)`, 'i');
+      if (re.test(ingredient)) {
+        filteredOutIngredients.push(raw);
+        return false;
+      }
+    }
+
     if (normalizedAllergies.has(ingredient)) {
       filteredOutIngredients.push(raw);
       return false;
@@ -336,62 +346,35 @@ const filterIncludeAgainstRestrictions = (includeIngredients, allergies, exclude
   return { filteredIncludeIngredients, filteredOutIngredients };
 };
 
-const buildDisallowedKeywords = (allergies, excludeIngredients) => {
-  const normalizedAllergies = normalizeCommaList(allergies).map(normalizeLoose).filter(Boolean);
-  const normalizedExcludeIngredients = normalizeCommaList(excludeIngredients).map(normalizeLoose).filter(Boolean);
-
-  const allergyKeywords = {
-    dairy: ['milk', 'cheese', 'butter', 'yogurt', 'cream', 'whey'],
-    egg: ['egg', 'eggs', 'mayonnaise'],
-    eggs: ['egg', 'eggs', 'mayonnaise'],
-    nuts: ['nuts', 'nut', 'almond', 'walnut', 'cashew', 'pistachio', 'hazelnut', 'pecan', 'peanut'],
-    nut: ['nuts', 'nut', 'almond', 'walnut', 'cashew', 'pistachio', 'hazelnut', 'pecan', 'peanut'],
-    peanut: ['peanut', 'peanuts'],
-    shellfish: ['shrimp', 'prawn', 'crab', 'lobster', 'shellfish'],
-    fish: ['fish', 'salmon', 'tuna', 'cod'],
-    soy: ['soy', 'tofu', 'edamame', 'soy sauce'],
-    gluten: ['wheat', 'flour', 'bread', 'pasta', 'barley', 'rye', 'gluten'],
-    sesame: ['sesame', 'tahini'],
-  };
-
-  const keywords = new Set(normalizedExcludeIngredients);
-  for (const allergy of normalizedAllergies) {
-    const list = allergyKeywords[allergy];
-    if (!list) continue;
-    for (const keyword of list) keywords.add(keyword);
-  }
-  return Array.from(keywords);
+const isVegetarianDiet = (diet) => {
+  const value = typeof diet === 'string' ? diet.trim().toLowerCase() : '';
+  return value === 'vegetarian' || value === 'vegan';
 };
 
-const recipeHasDisallowedKeywords = (recipe, disallowedKeywords) => {
-  const keywords = Array.isArray(disallowedKeywords) ? disallowedKeywords : [];
-  if (keywords.length === 0) return false;
-
-  const names = [];
-  const pushFromList = (list) => {
-    if (!Array.isArray(list)) return;
-    for (const item of list) {
-      if (!item || typeof item !== 'object') continue;
-      if (typeof item.name === 'string') names.push(item.name);
-      if (typeof item.originalName === 'string') names.push(item.originalName);
-      if (typeof item.original === 'string') names.push(item.original);
-    }
-  };
-
-  pushFromList(recipe?.missedIngredients);
-  pushFromList(recipe?.usedIngredients);
-  pushFromList(recipe?.unusedIngredients);
-
-  const normalizedNames = names.map(normalizeLoose).filter(Boolean);
-  for (const keyword of keywords) {
-    const kw = normalizeLoose(keyword);
-    if (!kw) continue;
-    const re = new RegExp(`(^|\\s)${escapeRegex(kw)}(\\s|$)`, 'i');
-    if (normalizedNames.some((n) => re.test(n))) return true;
-  }
-
-  return false;
-};
+const VEGETARIAN_EXCLUDE_KEYWORDS = [
+  'beef',
+  'pork',
+  'chicken',
+  'turkey',
+  'lamb',
+  'veal',
+  'bacon',
+  'ham',
+  'sausage',
+  'pepperoni',
+  'salami',
+  'prosciutto',
+  'anchovy',
+  'fish',
+  'shrimp',
+  'crab',
+  'lobster',
+  'shellfish',
+  'tuna',
+  'salmon',
+  'cod',
+  'gelatin',
+];
 
 // ---- Server ----
 const server = createServer(async (req, res) => {
@@ -584,7 +567,7 @@ const server = createServer(async (req, res) => {
       db.users[userIndex] = { ...db.users[userIndex], pantry };
       writeAuthDb(db);
 
-      sendJson(res, 200, { ok: true, pantry });
+      sendJson(res, 200, { ok: true, pantry, items: pantry });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown server error.';
       sendJson(res, 500, { error: message });
@@ -602,21 +585,26 @@ const server = createServer(async (req, res) => {
       const allergies = normalizeCommaList(payload.intolerances);
       const excludeIngredients = normalizeCommaList(payload.excludeIngredients);
 
-      const { filteredIncludeIngredients, filteredOutIngredients } = filterIncludeAgainstRestrictions(
-        originalIngredients,
-        allergies,
-        excludeIngredients,
-      );
-
       const diet = typeof payload.diet === 'string' ? payload.diet.trim() : '';
       const sort = typeof payload.sort === 'string' ? payload.sort.trim() : '';
       const maxReadyTime = Number(payload.maxReadyTime);
 
       const spoonacularIntolerances = mapAllergiesToSpoonacularIntolerances(allergies);
+      const vegetarianMode = isVegetarianDiet(diet);
+      const effectiveExcludeIngredients = normalizeCommaList([
+        ...excludeIngredients,
+        ...(vegetarianMode ? VEGETARIAN_EXCLUDE_KEYWORDS : []),
+      ]);
 
       const requestedNumberRaw = payload.number;
       const requestedNumber = Number(requestedNumberRaw);
       const number = Number.isFinite(requestedNumber) ? Math.max(1, Math.min(40, requestedNumber)) : 20;
+
+      const { filteredIncludeIngredients, filteredOutIngredients } = filterIncludeAgainstRestrictions(
+        originalIngredients,
+        allergies,
+        effectiveExcludeIngredients,
+      );
 
       if (filteredIncludeIngredients.length === 0) {
         sendJson(res, 200, {
@@ -628,7 +616,7 @@ const server = createServer(async (req, res) => {
             includeIngredients: [],
             filteredOutIngredients,
             intolerances: allergies,
-            excludeIngredients,
+            excludeIngredients: effectiveExcludeIngredients,
             totalResults: 0,
             number,
             ignorePantry: true,
@@ -648,7 +636,7 @@ const server = createServer(async (req, res) => {
         buildSpoonacularUrl('/recipes/complexSearch', {
           includeIngredients: includeIngredients.join(','),
           intolerances: spoonacularIntolerances.join(','),
-          excludeIngredients: excludeIngredients.join(','),
+          excludeIngredients: effectiveExcludeIngredients.join(','),
           diet,
           sort,
           maxReadyTime: Number.isFinite(maxReadyTime) ? maxReadyTime : undefined,
@@ -685,29 +673,10 @@ const server = createServer(async (req, res) => {
         totalResults = typeof data?.totalResults === 'number' ? data.totalResults : null;
       }
 
-      // Last resort: Spoonacular `complexSearch` can return 0 for strict includeIngredients.
-      // Try `findByIngredients` for broader matching, then filter out obvious conflicts.
-      if (results.length === 0) {
-        const disallowedKeywords = buildDisallowedKeywords(allergies, excludeIngredients);
-        const findByUrl = buildSpoonacularUrl('/recipes/findByIngredients', {
-          ingredients: filteredIncludeIngredients.join(','),
-          number,
-          ranking: 1,
-          ignorePantry: true,
-        });
-        const findByData = await fetchSpoonacularJson(findByUrl);
-        const findByResults = Array.isArray(findByData) ? findByData : [];
-        const filteredFindBy = findByResults.filter(
-          (recipe) => !recipeHasDisallowedKeywords(recipe, disallowedKeywords),
-        );
-        results = filteredFindBy;
-        totalResults = filteredFindBy.length;
-      }
-
       console.log('Spoonacular complexSearch', {
         includeCount: includeIngredients.length,
         allergyCount: allergies.length,
-        excludeCount: excludeIngredients.length,
+        excludeCount: effectiveExcludeIngredients.length,
         spoonacularIntolerances,
         diet: diet || null,
         retriedWithReducedIncludeIngredients,
@@ -737,7 +706,7 @@ const server = createServer(async (req, res) => {
           filteredOutIngredients,
           retriedWithReducedIncludeIngredients,
           intolerances: allergies,
-          excludeIngredients,
+          excludeIngredients: effectiveExcludeIngredients,
           totalResults,
           number,
           ignorePantry: true,

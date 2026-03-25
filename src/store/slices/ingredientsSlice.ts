@@ -5,12 +5,16 @@ interface IngredientsState {
   items: Ingredient[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  saveStatus: "idle" | "loading" | "succeeded" | "failed";
+  saveError: string | null;
 }
 
 const initialState: IngredientsState = {
   items: [],
   status: "idle",
   error: null,
+  saveStatus: "idle",
+  saveError: null,
 };
 
 type AddIngredientPayload = { name: string; quantity?: string };
@@ -25,20 +29,29 @@ export const fetchPantry = createAsyncThunk("ingredients/fetchPantry", async () 
   return pantry as Ingredient[];
 });
 
-export const savePantry = createAsyncThunk("ingredients/savePantry", async (_, { getState }) => {
-  const token = localStorage.getItem("auth_token");
-  if (!token) throw new Error("Signed out.");
-  const state = getState() as { ingredients: IngredientsState };
-  const res = await fetch("/api/pantry/me", {
-    method: "POST",
-    headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ items: state.ingredients.items }),
-  });
-  const data = (await res.json().catch(() => ({}))) as { pantry?: unknown; items?: unknown; error?: unknown };
-  if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not save pantry.");
-  const pantry = Array.isArray(data.pantry) ? data.pantry : Array.isArray(data.items) ? data.items : null;
-  return (pantry ? (pantry as Ingredient[]) : state.ingredients.items) as Ingredient[];
-});
+export const savePantry = createAsyncThunk(
+  "ingredients/savePantry",
+  async (_, { getState }) => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) throw new Error("Signed out.");
+    const state = getState() as { ingredients: IngredientsState };
+    const res = await fetch("/api/pantry/me", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ items: state.ingredients.items }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { pantry?: unknown; items?: unknown; error?: unknown };
+    if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not save pantry.");
+    const pantry = Array.isArray(data.pantry) ? data.pantry : Array.isArray(data.items) ? data.items : null;
+    return (pantry ? (pantry as Ingredient[]) : state.ingredients.items) as Ingredient[];
+  },
+  {
+    condition: (_, { getState }) => {
+      const state = getState() as { ingredients: IngredientsState };
+      return state.ingredients.saveStatus !== "loading";
+    },
+  },
+);
 
 export const ingredientsSlice = createSlice({
   name: 'ingredients',
@@ -82,8 +95,18 @@ export const ingredientsSlice = createSlice({
         state.error = action.error.message || "Could not load pantry.";
         state.items = [];
       })
+      .addCase(savePantry.pending, (state) => {
+        state.saveStatus = "loading";
+        state.saveError = null;
+      })
+      .addCase(savePantry.fulfilled, (state, action) => {
+        state.saveStatus = "succeeded";
+        state.items = action.payload;
+        state.saveError = null;
+      })
       .addCase(savePantry.rejected, (state, action) => {
-        state.error = action.error.message || "Could not save pantry.";
+        state.saveStatus = "failed";
+        state.saveError = action.error.message || "Could not save pantry.";
       });
   },
 });

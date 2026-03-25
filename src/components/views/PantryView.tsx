@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, ScanLine, Trash2 } from "lucide-react";
 import {
@@ -26,12 +26,60 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
   const [nameValue, setNameValue] = useState("");
   const [quantityValue, setQuantityValue] = useState("");
   const ingredients = useAppSelector((state) => state.ingredients.items);
+  const saveStatus = useAppSelector((state) => state.ingredients.saveStatus);
+  const saveError = useAppSelector((state) => state.ingredients.saveError);
   const dispatch = useAppDispatch();
+
+  const ingredientSignature = useMemo(
+    () =>
+      ingredients
+        .map((item) => `${item.id}:${item.name}:${item.quantity ?? ""}`)
+        .join("|"),
+    [ingredients],
+  );
+
+  const lastSavedSignatureRef = useRef<string>("");
+  const queuedSignatureRef = useRef<string>("");
+  const debounceTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+
+    if (!ingredientSignature) return;
+    if (ingredientSignature === lastSavedSignatureRef.current) return;
+
+    if (debounceTimerRef.current) window.clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = window.setTimeout(() => {
+      if (saveStatus === "loading") {
+        queuedSignatureRef.current = ingredientSignature;
+        return;
+      }
+      lastSavedSignatureRef.current = ingredientSignature;
+      dispatch(savePantry());
+    }, 450);
+
+    return () => {
+      if (debounceTimerRef.current) window.clearTimeout(debounceTimerRef.current);
+    };
+  }, [dispatch, ingredientSignature, saveStatus]);
+
+  useEffect(() => {
+    if (saveStatus === "loading") return;
+    const queued = queuedSignatureRef.current;
+    if (!queued) return;
+    if (queued === lastSavedSignatureRef.current) {
+      queuedSignatureRef.current = "";
+      return;
+    }
+    lastSavedSignatureRef.current = queued;
+    queuedSignatureRef.current = "";
+    dispatch(savePantry());
+  }, [dispatch, saveStatus]);
 
   const handleAdd = () => {
     if (nameValue.trim()) {
       dispatch(addIngredient({ name: nameValue, quantity: quantityValue }));
-      dispatch(savePantry());
       setNameValue("");
       setQuantityValue("");
     }
@@ -39,7 +87,6 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
 
   const handleRemove = (id: string) => {
     dispatch(removeIngredient(id));
-    dispatch(savePantry());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -107,9 +154,15 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
             <CardTitle className="text-xl">Pantry list</CardTitle>
             <CardDescription>
               {ingredients.length} items.
+              {saveStatus === "loading" ? " Saving…" : ""}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {saveError && (
+              <div className="mb-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {saveError}
+              </div>
+            )}
             <div className="w-full">
               {ingredients.length === 0 ? (
                 <div className="text-center text-muted-foreground py-10 border-2 border-dashed rounded-2xl bg-muted/20">
