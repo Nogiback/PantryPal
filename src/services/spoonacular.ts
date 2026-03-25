@@ -1,111 +1,136 @@
-import type { Recipe, Video, RecipeDetails } from "@/types";
-import { MOCK_RECIPES, MOCK_VIDEOS, MOCK_RECIPE_DETAILS } from "./mockData";
+import type { AppliedRecipeFilters, Recipe, RecipeDetails, Video } from "@/types";
+import { MOCK_RECIPES, MOCK_RECIPE_DETAILS, MOCK_VIDEOS } from "./mockData";
 
-const BASE_URL = import.meta.env.VITE_SPOONACULAR_API_BASE_URL;
-const API_KEYS = (import.meta.env.VITE_SPOONACULAR_API_KEY || "")
-  .split(",")
-  .map((k: string) => k.trim())
-  .filter(Boolean);
+type RecipeResponse = { recipes: Recipe[]; applied: AppliedRecipeFilters | null };
 
-console.log(`Spoonacular Service: Loaded ${API_KEYS.length} API keys.`);
+const DEFAULT_RECIPE_COUNT = 20;
+const DEFAULT_VIDEO_COUNT = 20;
 
-const STORAGE_KEY = "pantrypal_api_key_index";
-
-//Fetching the current stored index and converting to number using base-10
-let currentKeyIndex = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-if (Number.isNaN(currentKeyIndex) || currentKeyIndex >= API_KEYS.length) {
-  currentKeyIndex = 0;
-}
-
-const getCurrentKey = () => API_KEYS[currentKeyIndex];
-
-const rotateKey = (failedKey: string) => {
-  if (API_KEYS.length <= 1) return false;
-  if (getCurrentKey() === failedKey) {
-    currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-    localStorage.setItem(STORAGE_KEY, currentKeyIndex.toString());
-    console.log(`Rotating to API Key #${currentKeyIndex + 1}`);
-  }
-  return true;
+const mapDietaryPreferenceToDietParam = (dietaryPreference?: string) => {
+  const value = typeof dietaryPreference === "string" ? dietaryPreference.trim() : "";
+  if (!value || value === "No restrictions") return null;
+  if (value === "Gluten-free") return "gluten free";
+  if (value === "Keto") return "ketogenic";
+  if (value === "Pescatarian") return "pescetarian";
+  if (value === "Vegetarian") return "vegetarian";
+  if (value === "Vegan") return "vegan";
+  return null;
 };
 
-async function fetchWithRotation<T>(
-  label: string,
-  urlBuilder: (apiKey: string) => string,
-  mockData: T,
-): Promise<T> {
-  if (API_KEYS.length === 0) {
-    console.warn(`${label}: No Spoonacular API Key found. Using MOCK data.`);
-    return mockData;
+const chooseTuningFromGoals = (goals?: string[]) => {
+  const normalized = Array.isArray(goals)
+    ? goals
+        .filter((g): g is string => typeof g === "string")
+        .map((g) => g.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+
+  if (
+    normalized.includes("eat healthier") ||
+    normalized.includes("lose weight") ||
+    normalized.includes("gain muscle")
+  ) {
+    return { sort: "healthiness" as const };
   }
-  let attempts = 0;
-  while (attempts < API_KEYS.length) {
-    const apiKey = getCurrentKey();
-
-    try {
-      const response = await fetch(urlBuilder(apiKey));
-
-      if (response.ok) {
-        return (await response.json()) as T;
-      }
-
-      if (response.status === 401 || response.status === 402) {
-        rotateKey(apiKey);
-        attempts++;
-        continue;
-      }
-
-      const errorText = await response.text();
-      console.error(`${label}: API Error ${response.status}:`, errorText);
-      break;
-    } catch (error) {
-      console.error(`${label}: Network error:`, error);
-      break;
-    }
-  }
-  console.warn(`${label}: All keys failed. Falling back to MOCK data.`);
-  return mockData;
-}
+  if (normalized.includes("save money")) return { sort: "price" as const };
+  if (normalized.includes("quick meals")) return { maxReadyTime: 30 };
+  return {};
+};
 
 const normalizeIngredients = (ingredients: string[]) =>
   Array.from(new Set(ingredients.map((name) => name.trim()).filter(Boolean)));
 
 export const getRecipesByIngredients = async (
-  ingredients: string[],
-): Promise<Recipe[]> => {
-  const normalizedIngredients = normalizeIngredients(ingredients);
-  if (normalizedIngredients.length === 0) return [];
-  //Convert text into URL Safe format
-  const ingredientsString = encodeURIComponent(normalizedIngredients.join(","));
-  return fetchWithRotation(
-    "Recipes",
-    (apiKey: string) =>
-      `${BASE_URL}/recipes/findByIngredients?ingredients=${ingredientsString}&number=12&ranking=1&ignorePantry=true&apiKey=${apiKey}`,
-    MOCK_RECIPES,
-  );
+  includeIngredients: string[],
+  intolerances: string[],
+  excludeIngredients: string[],
+  opts?: { dietaryPreference?: string; goals?: string[] },
+): Promise<RecipeResponse> => {
+  const normalizedInclude = normalizeIngredients(includeIngredients);
+  const normalizedIntolerances = normalizeIngredients(intolerances);
+  const normalizedExclude = normalizeIngredients(excludeIngredients);
+
+  if (normalizedInclude.length === 0) return { recipes: [], applied: null };
+
+  const diet = mapDietaryPreferenceToDietParam(opts?.dietaryPreference);
+  const tuning = chooseTuningFromGoals(opts?.goals);
+
+  try {
+    const res = await fetch("/api/recipes/spoonacular", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        ingredients: normalizedInclude,
+        intolerances: normalizedIntolerances,
+        excludeIngredients: normalizedExclude,
+        diet,
+        ...tuning,
+        number: DEFAULT_RECIPE_COUNT,
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      recipes?: unknown;
+      applied?: unknown;
+      error?: unknown;
+    };
+
+    if (!res.ok) {
+      throw new Error(typeof data.error === "string" ? data.error : `Recipes API failed (${res.status}).`);
+    }
+
+    return {
+      recipes: Array.isArray(data.recipes) ? (data.recipes as Recipe[]) : [],
+      applied: (data.applied ?? null) as AppliedRecipeFilters | null,
+    };
+  } catch (error) {
+    console.error("Recipes: proxy error:", error);
+    return {
+      recipes: MOCK_RECIPES,
+      applied: {
+        endpoint: "/recipes/complexSearch",
+        originalIngredients: normalizedInclude,
+        includeIngredients: normalizedInclude,
+        filteredOutIngredients: [],
+        number: DEFAULT_RECIPE_COUNT,
+        ignorePantry: true,
+        ranking: 1,
+        addRecipeInformation: true,
+        fillIngredients: true,
+        diet,
+        intolerances: normalizedIntolerances,
+        excludeIngredients: normalizedExclude,
+        tuning,
+      },
+    };
+  }
 };
 
-export const searchFoodVideos = async (
-  query: string,
-): Promise<{ videos: Video[] }> => {
+export const searchFoodVideos = async (query: string): Promise<{ videos: Video[] }> => {
   const normalizedQuery = query.trim();
   if (!normalizedQuery) return { videos: [] };
 
-  return fetchWithRotation(
-    "Videos",
-    (apiKey: string) =>
-      `${BASE_URL}/food/videos/search?query=${encodeURIComponent(normalizedQuery)}&number=12&apiKey=${apiKey}`,
-    { videos: MOCK_VIDEOS },
-  );
+  try {
+    const url = new URL("/api/spoonacular/food/videos/search", window.location.origin);
+    url.searchParams.set("query", normalizedQuery);
+    url.searchParams.set("number", String(DEFAULT_VIDEO_COUNT));
+    const res = await fetch(url.toString(), { method: "GET" });
+    const data = (await res.json().catch(() => ({}))) as { videos?: unknown; error?: unknown };
+    if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : `Videos API failed (${res.status}).`);
+    return { videos: Array.isArray(data.videos) ? (data.videos as Video[]) : [] };
+  } catch (error) {
+    console.error("Videos: proxy error:", error);
+    return { videos: MOCK_VIDEOS };
+  }
 };
 
-export const getRecipeInformation = async (
-  id: number,
-): Promise<RecipeDetails> => {
-  return fetchWithRotation(
-    "Details",
-    (apiKey: string) =>
-      `${BASE_URL}/recipes/${id}/information?includeNutrition=false&apiKey=${apiKey}`,
-    { ...MOCK_RECIPE_DETAILS, id },
-  );
+export const getRecipeInformation = async (id: number): Promise<RecipeDetails> => {
+  try {
+    const res = await fetch(`/api/spoonacular/recipes/${id}/information`, { method: "GET" });
+    const data = (await res.json().catch(() => ({}))) as RecipeDetails & { error?: unknown };
+    if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : `Details API failed (${res.status}).`);
+    return data;
+  } catch (error) {
+    console.error("Details: proxy error:", error);
+    return { ...MOCK_RECIPE_DETAILS, id };
+  }
 };

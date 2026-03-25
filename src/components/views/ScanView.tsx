@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/store/hooks";
-import { addIngredient } from "@/store/slices/ingredientsSlice";
+import { addIngredient, savePantry } from "@/store/slices/ingredientsSlice";
 
 interface ExtractedItem {
   id: string;
@@ -330,6 +330,7 @@ export function ScanView() {
     }
 
     cleanedItems.forEach((item) => dispatch(addIngredient(item)));
+    dispatch(savePantry());
     setIsSaved(true);
   };
 
@@ -341,17 +342,14 @@ export function ScanView() {
       transition={{ duration: 0.5 }}
     >
       <div className="flex flex-col space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">
-          Scan Grocery Image
-        </h2>
+        <h2 className="text-3xl font-bold tracking-tight">Scan a grocery image</h2>
         <p className="text-muted-foreground">
-          Upload image on the left, compare extracted items on the right, then
-          save to pantry.
+          Upload a receipt or pantry photo, review extracted items, then save to your pantry.
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur">
           <CardHeader>
             <CardTitle>Image Upload</CardTitle>
             <CardDescription>
@@ -378,7 +376,7 @@ export function ScanView() {
 
               {!previewUrl ? (
                 <div
-                  className="border-2 border-dashed rounded-lg p-12 flex flex-col items-center justify-center space-y-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center space-y-4 hover:bg-muted/40 transition-colors cursor-pointer bg-background/40"
                   onClick={() => !isScanning && fileInputRef.current?.click()}
                 >
                   <div className="bg-primary/10 p-4 rounded-full">
@@ -394,7 +392,7 @@ export function ScanView() {
               ) : (
                 <button
                   type="button"
-                  className="w-full rounded-lg overflow-hidden border cursor-pointer"
+                  className="w-full rounded-2xl overflow-hidden border border-border/60 cursor-pointer bg-background/40"
                   onClick={() => !isScanning && fileInputRef.current?.click()}
                 >
                   <img
@@ -446,12 +444,16 @@ export function ScanView() {
                 </Button>
               </div>
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur">
           <CardHeader>
             <CardTitle>Extraction Result</CardTitle>
             <CardDescription>
@@ -468,7 +470,7 @@ export function ScanView() {
               )}
 
               {scannedItems.length === 0 ? (
-                <div className="border-2 border-dashed rounded-lg py-12 text-center text-muted-foreground">
+                <div className="border-2 border-dashed rounded-2xl py-12 text-center text-muted-foreground bg-muted/20">
                   Scan an image to see editable extraction results here.
                 </div>
               ) : (
@@ -482,7 +484,7 @@ export function ScanView() {
                     {scannedItems.map((item) => (
                       <div
                         key={item.id}
-                        className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center rounded-md border p-2"
+                        className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center rounded-xl border border-border/60 p-2 bg-background/40"
                       >
                         <Input
                           value={item.name}
@@ -490,6 +492,7 @@ export function ScanView() {
                             updateItem(item.id, "name", e.target.value)
                           }
                           placeholder="Item name"
+                          className="rounded-lg bg-background/60"
                         />
                         <Input
                           value={item.quantity}
@@ -497,6 +500,7 @@ export function ScanView() {
                             updateItem(item.id, "quantity", e.target.value)
                           }
                           placeholder="Quantity"
+                          className="rounded-lg bg-background/60"
                         />
                         <Button
                           variant="ghost"

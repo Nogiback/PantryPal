@@ -4,11 +4,12 @@ import {
   searchFoodVideos,
   getRecipeInformation,
 } from "@/services/spoonacular";
-import type { Recipe, Video, RecipeDetails } from "@/types";
+import type { Recipe, Video, RecipeDetails, AppliedRecipeFilters } from "@/types";
 import type { RootState } from "../index";
 
 interface RecipesState {
   items: Recipe[];
+  appliedFilters: AppliedRecipeFilters | null;
   videos: Video[];
   selectedRecipeDetails: RecipeDetails | null;
   detailsStatus: "idle" | "loading" | "succeeded" | "failed";
@@ -22,6 +23,7 @@ interface RecipesState {
 
 const initialState: RecipesState = {
   items: [],
+  appliedFilters: null,
   videos: [],
   selectedRecipeDetails: null,
   detailsStatus: "idle",
@@ -41,15 +43,31 @@ const createIngredientSignature = (ingredients: string[]) =>
 
 export const fetchRecipes = createAsyncThunk(
   "recipes/fetchByIngredients",
-  async (ingredients: string[]) => {
-    const recipesResponse = await getRecipesByIngredients(ingredients);
-    return recipesResponse;
+  async (_, { getState }) => {
+    const state = getState() as RootState;
+    const includeIngredients = state.ingredients.items.map((i) => i.name);
+    const onboarding = state.preferences.onboarding;
+    const intolerances = onboarding?.allergies ?? [];
+    const excludeIngredients = onboarding?.customAvoid ?? [];
+    const dietaryPreference = onboarding?.dietaryPreference;
+    const goals = onboarding?.goals;
+
+    const signature = createIngredientSignature(includeIngredients);
+    const result = await getRecipesByIngredients(
+      includeIngredients,
+      intolerances,
+      excludeIngredients,
+      { dietaryPreference, goals },
+    );
+    return { ...result, signature };
   },
   {
-    condition: (ingredients, { getState }) => {
+    condition: (_, { getState }) => {
       const state = getState() as RootState;
       if (state.recipes.status === "loading") return false;
-      const nextSignature = createIngredientSignature(ingredients);
+      const nextSignature = createIngredientSignature(
+        state.ingredients.items.map((i) => i.name),
+      );
       return nextSignature !== state.recipes.lastRecipeSignature;
     },
   },
@@ -95,13 +113,17 @@ const recipesSlice = createSlice({
     builder
       .addCase(fetchRecipes.pending, (state) => {
         state.status = "loading";
+        state.items = [];
+        state.appliedFilters = null;
+        state.error = null;
         state.videoStatus = "idle"; // Reset videos so they refresh when user visits the tab
         state.videos = []; // Clear old videos
       })
       .addCase(fetchRecipes.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.items = action.payload;
-        state.lastRecipeSignature = createIngredientSignature(action.meta.arg);
+        state.items = action.payload.recipes;
+        state.appliedFilters = action.payload.applied;
+        state.lastRecipeSignature = action.payload.signature;
       })
       .addCase(fetchRecipes.rejected, (state, action) => {
         state.status = "failed";

@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { ChefHat, Loader2, Search } from "lucide-react";
+import { ChefHat, Loader2, RefreshCw, Search } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchRecipes, fetchRecipeDetails } from "@/store/slices/recipesSlice";
 import type { IngredientInfo } from "@/types";
@@ -17,22 +17,56 @@ export function RecipesView() {
     items: recipes,
     status,
     error,
+    appliedFilters,
     selectedRecipeDetails,
     detailsStatus,
   } = useAppSelector((state) => state.recipes);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+  const ingredientSignature = useMemo(
+    () =>
+      ingredients
+        .map((item) => item.name.trim().toLowerCase())
+        .filter(Boolean)
+        .join(","),
+    [ingredients],
+  );
+
+  // If pantry changes while recipes are already loading, queue a refresh so we don't miss the update.
+  const lastRequestedSignatureRef = useRef<string>("");
+  const queuedSignatureRef = useRef<string>("");
+
   useEffect(() => {
-    if (ingredients.length > 0) {
-      const ingredientNames = ingredients.map((i) => i.name);
-      dispatch(fetchRecipes(ingredientNames));
+    if (ingredients.length === 0) return;
+
+    if (status === "loading") {
+      queuedSignatureRef.current = ingredientSignature;
+      return;
     }
-  }, [ingredients, dispatch]);
+
+    if (ingredientSignature && ingredientSignature !== lastRequestedSignatureRef.current) {
+      lastRequestedSignatureRef.current = ingredientSignature;
+      dispatch(fetchRecipes());
+    }
+  }, [dispatch, ingredientSignature, ingredients.length, status]);
+
+  useEffect(() => {
+    if (status === "loading") return;
+    const queued = queuedSignatureRef.current;
+    if (!queued) return;
+    if (queued === lastRequestedSignatureRef.current) {
+      queuedSignatureRef.current = "";
+      return;
+    }
+    lastRequestedSignatureRef.current = queued;
+    queuedSignatureRef.current = "";
+    dispatch(fetchRecipes());
+  }, [dispatch, status]);
 
   const handleSearch = () => {
-    if (ingredients.length > 0) {
-      const ingredientNames = ingredients.map((i) => i.name);
-      dispatch(fetchRecipes(ingredientNames));
+    if (ingredients.length > 0 && status !== "loading") {
+      lastRequestedSignatureRef.current = ingredientSignature;
+      dispatch(fetchRecipes());
     }
   };
 
@@ -47,21 +81,72 @@ export function RecipesView() {
 
   return (
     <motion.div
-      className="space-y-6 h-[calc(100vh-8rem)]"
+      className="space-y-6 h-[calc(100vh-10rem)]"
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8 }}
     >
-      <div className="flex flex-col space-y-2">
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">
-              Suggested Recipes
-            </h2>
-            <p className="text-muted-foreground">
-              Based on your pantry ({ingredients.length} items).
-            </p>
-          </div>
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight">Suggested recipes</h2>
+          <p className="text-muted-foreground">
+            Based on your pantry ({ingredients.length} items).
+          </p>
+          {appliedFilters &&
+            (appliedFilters.diet ||
+              appliedFilters.intolerances.length > 0 ||
+              appliedFilters.excludeIngredients.length > 0 ||
+              Object.keys(appliedFilters.tuning || {}).length > 0) && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {appliedFilters.diet && (
+                  <Badge variant="secondary" className="bg-emerald-50 text-emerald-800 border border-emerald-100">
+                    Diet: {appliedFilters.diet}
+                  </Badge>
+                )}
+                {appliedFilters.intolerances.map((item) => (
+                  <Badge key={item} variant="outline" className="border-dashed">
+                    Avoid: {item}
+                  </Badge>
+                ))}
+                {appliedFilters.excludeIngredients.slice(0, 3).map((item) => (
+                  <Badge key={item} variant="outline" className="border-dashed">
+                    Exclude: {item}
+                  </Badge>
+                ))}
+                {"maxReadyTime" in (appliedFilters.tuning || {}) &&
+                  typeof (appliedFilters.tuning as { maxReadyTime?: unknown }).maxReadyTime === "number" && (
+                    <Badge variant="secondary" className="bg-slate-50 text-slate-700 border border-slate-200">
+                      ≤ {(appliedFilters.tuning as { maxReadyTime: number }).maxReadyTime} min
+                    </Badge>
+                  )}
+                {"sort" in (appliedFilters.tuning || {}) &&
+                  typeof (appliedFilters.tuning as { sort?: unknown }).sort === "string" && (
+                    <Badge variant="secondary" className="bg-slate-50 text-slate-700 border border-slate-200">
+                      Sort: {(appliedFilters.tuning as { sort: string }).sort}
+                    </Badge>
+                  )}
+                {appliedFilters.excludeIngredients.length > 3 && (
+                  <Badge variant="secondary" className="bg-slate-50 text-slate-700 border border-slate-200">
+                    +{appliedFilters.excludeIngredients.length - 3} more excludes
+                  </Badge>
+                )}
+              </div>
+            )}
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleSearch}
+            disabled={ingredients.length === 0 || status === "loading"}
+          >
+            {status === "loading" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Refresh
+          </Button>
           <Button
             onClick={handleSearch}
             disabled={ingredients.length === 0 || status === "loading"}
@@ -71,7 +156,7 @@ export function RecipesView() {
             ) : (
               <Search className="mr-2 h-4 w-4" />
             )}
-            Find Recipes
+            Find
           </Button>
         </div>
       </div>
@@ -85,7 +170,27 @@ export function RecipesView() {
       {/* Main Content Area - Full width now */}
       <div className="h-full min-h-0">
         <ScrollArea className="h-full pr-4">
-          {recipes.length === 0 ? (
+          {status === "loading" && recipes.length === 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-20">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <Card
+                  key={idx}
+                  className="overflow-hidden shadow-sm border-muted/60 animate-pulse"
+                >
+                  <div className="h-48 bg-muted" />
+                  <CardContent className="p-4 space-y-4">
+                    <div className="h-4 w-3/4 bg-muted rounded" />
+                    <div className="h-3 w-2/3 bg-muted rounded" />
+                    <div className="flex gap-2">
+                      <div className="h-6 w-16 bg-muted rounded-full" />
+                      <div className="h-6 w-20 bg-muted rounded-full" />
+                    </div>
+                    <div className="h-9 w-full bg-muted rounded-md" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : recipes.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border-2 border-dashed rounded-lg bg-muted/20 h-full">
               <ChefHat className="h-12 w-12 mb-4 opacity-20" />
               <h3 className="text-lg font-semibold">No recipes found</h3>

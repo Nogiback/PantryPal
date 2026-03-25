@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, ScanLine, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -11,27 +11,35 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   addIngredient,
   removeIngredient,
+  savePantry,
 } from "@/store/slices/ingredientsSlice";
 
-export function PantryView() {
-  const [inputValue, setInputValue] = useState("");
+interface PantryViewProps {
+  onGoToScan?: () => void;
+}
+
+export function PantryView({ onGoToScan }: PantryViewProps) {
+  const [nameValue, setNameValue] = useState("");
+  const [quantityValue, setQuantityValue] = useState("");
   const ingredients = useAppSelector((state) => state.ingredients.items);
   const dispatch = useAppDispatch();
 
   const handleAdd = () => {
-    if (inputValue.trim()) {
-      dispatch(addIngredient({ name: inputValue }));
-      setInputValue("");
+    if (nameValue.trim()) {
+      dispatch(addIngredient({ name: nameValue, quantity: quantityValue }));
+      dispatch(savePantry());
+      setNameValue("");
+      setQuantityValue("");
     }
   };
 
   const handleRemove = (id: string) => {
     dispatch(removeIngredient(id));
+    dispatch(savePantry());
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -42,33 +50,49 @@ export function PantryView() {
 
   return (
     <motion.div
-      className="space-y-6"
+      className="space-y-5"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">My Pantry</h2>
+      <div className="space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Your ingredients</h2>
         <p className="text-muted-foreground">
-          Manage your available ingredients here.
+          Add items manually or scan an image in the Scan tab.
         </p>
+        {onGoToScan && (
+          <div className="pt-1">
+            <Button variant="outline" className="rounded-full" onClick={onGoToScan}>
+              <ScanLine className="h-4 w-4" />
+              Scan an image
+            </Button>
+          </div>
+        )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-6 md:grid-cols-2 md:items-start">
+        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur">
           <CardHeader>
-            <CardTitle>Add Ingredients</CardTitle>
+            <CardTitle className="text-xl">Quick add</CardTitle>
             <CardDescription>
-              Manually add items to your pantry.
+              Add an item (optionally with a quantity).
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex space-x-2">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-2">
               <Input
-                placeholder="e.g. Tomato, Pasta, Basil"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="e.g. Tomatoes"
+                value={nameValue}
+                onChange={(e) => setNameValue(e.target.value)}
                 onKeyDown={handleKeyDown}
+                className="h-11 rounded-xl bg-background/60"
+              />
+              <Input
+                placeholder="Qty (optional)"
+                value={quantityValue}
+                onChange={(e) => setQuantityValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="h-11 rounded-xl bg-background/60"
               />
               <Button onClick={handleAdd}>
                 <Plus className="h-4 w-4" />
@@ -78,18 +102,29 @@ export function PantryView() {
           </CardContent>
         </Card>
 
-        <Card className="md:row-span-2">
+        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur">
           <CardHeader>
-            <CardTitle>Current Ingredients</CardTitle>
+            <CardTitle className="text-xl">Pantry list</CardTitle>
             <CardDescription>
-              You have {ingredients.length} items.
+              {ingredients.length} items.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-100 w-full pr-4">
+            <div className="w-full">
               {ingredients.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  No ingredients added yet.
+                <div className="text-center text-muted-foreground py-10 border-2 border-dashed rounded-2xl bg-muted/20">
+                  <p className="font-medium">Your pantry is empty</p>
+                  <p className="text-sm">
+                    Add ingredients below or scan an image in the Scan tab.
+                  </p>
+                  {onGoToScan && (
+                    <div className="pt-4">
+                      <Button className="rounded-full" onClick={onGoToScan}>
+                        <ScanLine className="h-4 w-4" />
+                        Scan to add items
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
@@ -97,24 +132,30 @@ export function PantryView() {
                     <Badge
                       key={ingredient.id}
                       variant="secondary"
-                      className="text-sm py-1 pl-3 pr-1 flex items-center gap-1"
+                      className="text-sm py-1.5 pl-3 pr-1.5 flex items-center gap-2 rounded-full"
                     >
-                      {ingredient.quantity
-                        ? `${ingredient.name} (${ingredient.quantity})`
-                        : ingredient.name}
+                      <span className="font-medium">
+                        {ingredient.name}
+                      </span>
+                      {ingredient.quantity && (
+                        <span className="text-muted-foreground">
+                          {ingredient.quantity}
+                        </span>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-5 w-5 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                        className="h-6 w-6 rounded-full hover:bg-destructive/10 hover:text-destructive"
                         onClick={() => handleRemove(ingredient.id)}
+                        aria-label={`Remove ${ingredient.name}`}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </Badge>
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
       </div>

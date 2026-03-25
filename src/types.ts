@@ -17,6 +17,30 @@ export interface Recipe {
   likes: number;
 }
 
+export interface AppliedRecipeFilters {
+  endpoint?: string;
+  originalIngredients?: string[];
+  includeIngredients?: string[];
+  filteredOutIngredients?: string[];
+  retriedWithoutIncludeIngredients?: boolean;
+  retriedWithReducedIncludeIngredients?: boolean;
+  filteredOutRecipesCount?: number;
+  totalResults?: number | null;
+  number?: number;
+  ignorePantry?: boolean;
+  ranking?: number;
+  addRecipeInformation?: boolean;
+  fillIngredients?: boolean;
+  diet: string | null;
+  intolerances: string[];
+  excludeIngredients: string[];
+  tuning: {
+    sort?: string;
+    maxReadyTime?: number;
+    [key: string]: unknown;
+  };
+}
+
 export interface IngredientInfo {
   id: number;
   amount: number;
@@ -76,6 +100,3 @@ export interface RecipeDetails extends Recipe {
   veryHealthy: boolean;
   cheap: boolean;
 }
-
-
-

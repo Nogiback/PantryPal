@@ -1,0 +1,623 @@
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { ChefHat, Loader2, Save, UserRound, X } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAppSelector } from "@/store/hooks";
+
+type Diet =
+  | "No restrictions"
+  | "Vegetarian"
+  | "Vegan"
+  | "Pescatarian"
+  | "Keto"
+  | "Halal"
+  | "Gluten-free";
+
+type Flavor = "Spicy" | "Sweet" | "Savory" | "Tangy" | "Mild";
+
+type OnboardingPayload = {
+  dietaryPreference: Diet;
+  allergies: string[];
+  customAvoid: string[];
+  taste: { flavors: Flavor[]; spiceLevel: number };
+  goals: string[];
+};
+
+const dietOptions: Diet[] = [
+  "No restrictions",
+  "Vegetarian",
+  "Vegan",
+  "Pescatarian",
+  "Keto",
+  "Halal",
+  "Gluten-free",
+];
+
+const allergyOptions = ["Nuts", "Dairy", "Eggs", "Shellfish", "Soy", "Gluten"] as const;
+const flavorOptions: Flavor[] = ["Spicy", "Sweet", "Savory", "Tangy", "Mild"];
+const goalOptions = [
+  "Eat healthier",
+  "Lose weight",
+  "Gain muscle",
+  "Save money",
+  "Quick meals",
+  "Explore cuisines",
+] as const;
+
+const uiSpring = { type: "spring", stiffness: 500, damping: 35 } as const;
+
+const CheckboxPill = ({
+  label,
+  checked,
+  onToggle,
+}: {
+  label: string;
+  checked: boolean;
+  onToggle: () => void;
+}) => (
+  <motion.button
+    type="button"
+    onClick={onToggle}
+    whileHover={{ y: -1 }}
+    whileTap={{ scale: 0.98 }}
+    transition={uiSpring}
+    className={[
+      "inline-flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+      checked
+        ? "border-primary/30 bg-gradient-to-br from-primary/10 via-background/50 to-teal-200/10 shadow-sm ring-1 ring-primary/15"
+        : "border-border/60 bg-background/50 hover:bg-muted/30 hover:border-primary/25 hover:shadow-sm",
+    ].join(" ")}
+  >
+    <span
+      className={[
+        "h-3.5 w-3.5 rounded border",
+        checked ? "border-primary bg-primary" : "border-muted-foreground/40",
+      ].join(" ")}
+    />
+    <span className="font-medium">{label}</span>
+  </motion.button>
+);
+
+const TogglePill = ({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) => (
+  <motion.button
+    type="button"
+    onClick={onClick}
+    whileHover={{ y: -1, scale: 1.01 }}
+    whileTap={{ scale: 0.99 }}
+    transition={uiSpring}
+    className={[
+      "w-full text-left rounded-xl border px-3 py-2 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+      selected
+        ? "border-primary/30 bg-gradient-to-br from-primary/10 via-background/40 to-teal-200/10 text-foreground shadow-sm ring-1 ring-primary/15"
+        : "border-border/60 bg-background/50 hover:bg-muted/30 hover:border-primary/25 hover:shadow-sm text-foreground",
+    ].join(" ")}
+  >
+    <div className="flex items-center justify-between">
+      <span className="font-medium">{label}</span>
+      <span
+        className={[
+          "h-3.5 w-3.5 rounded-full border grid place-items-center",
+          selected ? "border-primary bg-primary shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" : "border-muted-foreground/40",
+        ].join(" ")}
+      />
+    </div>
+  </motion.button>
+);
+
+const emptyOnboarding = (): OnboardingPayload => ({
+  dietaryPreference: "No restrictions",
+  allergies: [],
+  customAvoid: [],
+  taste: { flavors: [], spiceLevel: 0 },
+  goals: [],
+});
+
+const normalizeOnboarding = (raw: unknown): OnboardingPayload => {
+  const base = emptyOnboarding();
+  if (!raw || typeof raw !== "object") return base;
+
+  const value = raw as Partial<OnboardingPayload>;
+  const dietaryPreference =
+    typeof value.dietaryPreference === "string" && (dietOptions as string[]).includes(value.dietaryPreference)
+      ? (value.dietaryPreference as Diet)
+      : base.dietaryPreference;
+
+  const allergies = Array.isArray(value.allergies) ? value.allergies.filter((x): x is string => typeof x === "string") : [];
+  const customAvoid = Array.isArray(value.customAvoid)
+    ? value.customAvoid.filter((x): x is string => typeof x === "string")
+    : [];
+
+  const tasteRaw = (value.taste ?? {}) as Partial<OnboardingPayload["taste"]>;
+  const flavors = Array.isArray(tasteRaw.flavors)
+    ? tasteRaw.flavors.filter((x): x is Flavor => typeof x === "string" && (flavorOptions as string[]).includes(x))
+    : [];
+  const spiceLevelNum = Number(tasteRaw.spiceLevel ?? 0);
+  const spiceLevel = Number.isFinite(spiceLevelNum) ? Math.max(0, Math.min(4, Math.round(spiceLevelNum))) : 0;
+
+  const goals = Array.isArray(value.goals) ? value.goals.filter((x): x is string => typeof x === "string") : [];
+
+  return {
+    dietaryPreference,
+    allergies,
+    customAvoid,
+    taste: { flavors, spiceLevel },
+    goals,
+  };
+};
+
+export function ProfileView() {
+  const pantryCount = useAppSelector((state) => state.ingredients.items.length);
+  const [user, setUser] = useState<{ id?: string; name?: string; email?: string } | null>(null);
+  const [saved, setSaved] = useState<OnboardingPayload>(emptyOnboarding());
+  const [draft, setDraft] = useState<OnboardingPayload>(emptyOnboarding());
+  const [customInput, setCustomInput] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const initials = useMemo(() => {
+    const src = (user?.name || user?.email || "U").trim();
+    const parts = src.split(/\s+/).filter(Boolean);
+    const first = parts[0]?.[0] || "U";
+    const second = parts.length > 1 ? parts[parts.length - 1]?.[0] : src.includes("@") ? src[1] : "";
+    return (first + (second || "")).toUpperCase();
+  }, [user?.email, user?.name]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+    setMessage(null);
+
+    (async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+          setError("You are signed out. Please log in again.");
+          return;
+        }
+
+        const [meRes, onboardRes] = await Promise.all([
+          fetch("/api/auth/me", { method: "GET", headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/onboarding/me", { method: "GET", headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        if (!meRes.ok) throw new Error("Could not load profile.");
+        if (!onboardRes.ok) throw new Error("Could not load preferences.");
+
+        const meData = (await meRes.json().catch(() => ({}))) as { user?: unknown };
+        const onboardData = (await onboardRes.json().catch(() => ({}))) as { onboarding?: unknown };
+
+        if (cancelled) return;
+        const publicUser = (meData.user ?? null) as { id?: string; name?: string; email?: string } | null;
+        const onboarding = normalizeOnboarding(onboardData.onboarding);
+
+        setUser(publicUser);
+        setSaved(onboarding);
+        setDraft(onboarding);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Could not load profile.");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!message) return;
+    const t = window.setTimeout(() => setMessage(null), 3500);
+    return () => window.clearTimeout(t);
+  }, [message]);
+
+  const toggleInList = (list: string[], item: string) =>
+    list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
+
+  const addCustomAvoid = () => {
+    const trimmed = customInput.trim();
+    if (!trimmed) return;
+    if (draft.customAvoid.some((x) => x.toLowerCase() === trimmed.toLowerCase())) {
+      setCustomInput("");
+      return;
+    }
+    setDraft((d) => ({ ...d, customAvoid: [...d.customAvoid, trimmed] }));
+    setCustomInput("");
+  };
+
+  const removeCustomAvoid = (name: string) => {
+    setDraft((d) => ({ ...d, customAvoid: d.customAvoid.filter((x) => x !== name) }));
+  };
+
+  const save = async () => {
+    setIsSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        setError("You are signed out. Please log in again.");
+        return;
+      }
+
+      const res = await fetch("/api/onboarding/me", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(draft),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as { error?: unknown };
+      if (!res.ok) {
+        setError(typeof data.error === "string" ? data.error : "Could not save preferences.");
+        return;
+      }
+
+      setSaved(draft);
+      setIsEditing(false);
+      setMessage("Preferences updated.");
+
+      const stored = localStorage.getItem("auth_user");
+      const parsed = stored ? (JSON.parse(stored) as Record<string, unknown> | null) : null;
+      const updated = { ...(parsed || {}), onboardingCompleted: true, onboarding: draft };
+      localStorage.setItem("auth_user", JSON.stringify(updated));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save preferences.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const cancel = () => {
+    setDraft(saved);
+    setCustomInput("");
+    setError(null);
+    setMessage(null);
+    setIsEditing(false);
+  };
+
+  return (
+    <motion.div
+      className="space-y-6"
+      initial={{ opacity: 0, x: 40 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.55 }}
+    >
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground">Manage your profile and recipe preferences.</p>
+        </div>
+        <div className="flex gap-2">
+          {!isEditing ? (
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => {
+                setMessage(null);
+                setError(null);
+                setIsEditing(true);
+              }}
+              disabled={isLoading}
+            >
+              <UserRound className="h-4 w-4" />
+              <span className="ml-2">Edit preferences</span>
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                className="rounded-full"
+                onClick={cancel}
+                disabled={isSaving}
+              >
+                <X className="h-4 w-4" />
+                <span className="ml-2">Cancel</span>
+              </Button>
+              <Button className="rounded-full" onClick={save} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                <span className="ml-2">{isSaving ? "Saving…" : "Save"}</span>
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {error && <div className="p-3 rounded-xl bg-red-50 text-red-700 border border-red-100 text-sm">{error}</div>}
+      {message && <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100 text-sm">{message}</div>}
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Card className="lg:col-span-2 border-border/60 bg-background/75">
+          <CardHeader className="space-y-1">
+            <CardTitle className="flex items-center gap-2">
+              <ChefHat className="h-5 w-5 text-primary" />
+              Your profile
+            </CardTitle>
+            <CardDescription>Quick details about your account.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading…
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-primary/15 via-background to-teal-200/25 border border-border/60 grid place-items-center font-semibold text-primary">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">{user?.name || "PantryPal user"}</div>
+                    <div className="text-sm text-muted-foreground truncate">{user?.email || "—"}</div>
+                  </div>
+                </div>
+
+                <div className="h-px w-full bg-border/70" />
+
+                <div className="grid gap-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Pantry items</span>
+                    <Badge variant="secondary" className="rounded-full">{pantryCount}</Badge>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-3 border-border/60 bg-background/75">
+          <CardHeader className="space-y-1">
+            <CardTitle>Preferences</CardTitle>
+            <CardDescription>These help tailor recipe suggestions to you.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading preferences…
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="font-semibold">Diet</div>
+                      <div className="text-sm text-muted-foreground">Choose what best describes your diet.</div>
+                    </div>
+                    {!isEditing && (
+                      <Badge variant="secondary" className="rounded-full">
+                        {saved.dietaryPreference}
+                      </Badge>
+                    )}
+                  </div>
+                  {isEditing && (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {dietOptions.map((diet) => (
+                        <TogglePill
+                          key={diet}
+                          label={diet}
+                          selected={draft.dietaryPreference === diet}
+                          onClick={() => setDraft((d) => ({ ...d, dietaryPreference: diet }))}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="h-px w-full bg-border/70" />
+
+                <div className="space-y-3">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold">Allergies & avoids</div>
+                    <div className="text-sm text-muted-foreground">We’ll avoid these in your recipes.</div>
+                  </div>
+
+                  {isEditing ? (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        {allergyOptions.map((allergy) => (
+                          <CheckboxPill
+                            key={allergy}
+                            label={allergy}
+                            checked={draft.allergies.includes(allergy)}
+                            onToggle={() => setDraft((d) => ({ ...d, allergies: toggleInList(d.allergies, allergy) }))}
+                          />
+                        ))}
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <Label htmlFor="customAvoid" className="text-sm">
+                          Add custom ingredient to avoid
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="customAvoid"
+                            value={customInput}
+                            placeholder="e.g. cilantro"
+                            onChange={(e) => setCustomInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addCustomAvoid();
+                              }
+                            }}
+                          />
+                          <Button type="button" variant="outline" onClick={addCustomAvoid}>
+                            Add
+                          </Button>
+                        </div>
+
+                        {draft.customAvoid.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {draft.customAvoid.map((item) => (
+                              <Badge key={item} variant="secondary" className="rounded-full pr-1">
+                                <span className="mr-1">{item}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 rounded-full hover:bg-black/5"
+                                  onClick={() => removeCustomAvoid(item)}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {saved.allergies.length === 0 && saved.customAvoid.length === 0 ? (
+                        <Badge variant="secondary" className="rounded-full">None</Badge>
+                      ) : (
+                        <>
+                          {saved.allergies.map((item) => (
+                            <Badge key={item} variant="outline" className="rounded-full border-dashed">
+                              {item}
+                            </Badge>
+                          ))}
+                          {saved.customAvoid.map((item) => (
+                            <Badge key={item} variant="outline" className="rounded-full border-dashed">
+                              Exclude: {item}
+                            </Badge>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="h-px w-full bg-border/70" />
+
+                <div className="space-y-3">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold">Taste</div>
+                    <div className="text-sm text-muted-foreground">Help us match flavors you enjoy.</div>
+                  </div>
+
+                  {isEditing ? (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        {flavorOptions.map((flavor) => (
+                          <CheckboxPill
+                            key={flavor}
+                            label={flavor}
+                            checked={draft.taste.flavors.includes(flavor)}
+                            onToggle={() =>
+                              setDraft((d) => ({
+                                ...d,
+                                taste: { ...d.taste, flavors: toggleInList(d.taste.flavors, flavor) as Flavor[] },
+                              }))
+                            }
+                          />
+                        ))}
+                      </div>
+
+                      <div className="pt-2 space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Spice level</span>
+                          <Badge variant="secondary" className="rounded-full">
+                            {draft.taste.spiceLevel}/4
+                          </Badge>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={4}
+                          step={1}
+                          value={draft.taste.spiceLevel}
+                          onChange={(e) =>
+                            setDraft((d) => ({
+                              ...d,
+                              taste: { ...d.taste, spiceLevel: Number(e.target.value) },
+                            }))
+                          }
+                          className="w-full accent-primary"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Mild</span>
+                          <span>Very spicy</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {saved.taste.flavors.length === 0 ? (
+                        <Badge variant="secondary" className="rounded-full">No flavors selected</Badge>
+                      ) : (
+                        saved.taste.flavors.map((item) => (
+                          <Badge key={item} variant="secondary" className="rounded-full">
+                            {item}
+                          </Badge>
+                        ))
+                      )}
+                      <Badge variant="outline" className="rounded-full border-dashed">
+                        Spice: {saved.taste.spiceLevel}/4
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+
+                <div className="h-px w-full bg-border/70" />
+
+                <div className="space-y-3">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold">Goals</div>
+                    <div className="text-sm text-muted-foreground">What are you aiming for?</div>
+                  </div>
+
+                  {isEditing ? (
+                    <div className="flex flex-wrap gap-2">
+                      {goalOptions.map((goal) => (
+                        <CheckboxPill
+                          key={goal}
+                          label={goal}
+                          checked={draft.goals.includes(goal)}
+                          onToggle={() => setDraft((d) => ({ ...d, goals: toggleInList(d.goals, goal) }))}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {saved.goals.length === 0 ? (
+                        <Badge variant="secondary" className="rounded-full">No goals selected</Badge>
+                      ) : (
+                        saved.goals.map((item) => (
+                          <Badge key={item} variant="secondary" className="rounded-full">
+                            {item}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </motion.div>
+  );
+}

@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 interface LandingPageProps {
-  onEnterApp: () => void;
+  onLogin: () => void;
+  onSignUp: () => void;
 }
 
-export function LandingPage({ onEnterApp }: LandingPageProps) {
+export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -23,9 +24,16 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col font-sans text-foreground">
+    <div className="min-h-screen bg-background flex flex-col font-sans text-foreground relative overflow-hidden">
+      {/* Subtle background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/12 via-background to-emerald-200/15 dark:to-primary/10" />
+        <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-emerald-300/20 blur-3xl dark:bg-primary/15" />
+        <div className="absolute -bottom-40 -right-40 h-[34rem] w-[34rem] rounded-full bg-teal-300/20 blur-3xl dark:bg-primary/15" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_10%,rgba(16,185,129,0.16),transparent_55%),radial-gradient(circle_at_75%_85%,rgba(20,184,166,0.12),transparent_60%)] dark:bg-[radial-gradient(circle_at_30%_10%,rgba(34,197,94,0.18),transparent_55%),radial-gradient(circle_at_75%_85%,rgba(34,197,94,0.12),transparent_60%)]" />
+      </div>
       {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-xl text-primary">
             <ChefHat className="h-6 w-6" />
@@ -37,63 +45,107 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
             <a href="#community" className="hover:text-primary transition-colors">Community</a>
           </nav>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onEnterApp}>Login</Button>
-            <Button onClick={onEnterApp}>Sign Up <ArrowRight className="ml-2 h-4 w-4" /></Button>
+            <Button variant="outline" className="rounded-full" onClick={onLogin}>Login</Button>
+            <Button className="rounded-full" onClick={onSignUp}>Sign Up <ArrowRight className="ml-2 h-4 w-4" /></Button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1">
+      <main className="flex-1 relative">
         {/* Hero Section */}
-        <section className="py-20 md:py-32 container mx-auto px-4 flex flex-col-reverse md:flex-row items-center gap-12">
+        <section className="py-16 md:py-28 container mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
           <motion.div 
-            className="flex-1 space-y-6 text-center md:text-left"
+            className="flex-1 space-y-6 text-center md:text-left order-1"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary/10 text-primary hover:bg-primary/20">
-              Try it now
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-semibold text-primary shadow-xs">
+              <span className="inline-flex h-2 w-2 rounded-full bg-primary" />
+              Smart pantry + recipes
             </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-primary">
-              Cook smarter with what you <span className="italic text-primary/80">already have</span>
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
+              Cook smarter with what you{" "}
+              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                already have
+              </span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-lg mx-auto md:mx-0">
-              From snapping your grocery receipt to discovering recipes tailored to your pantry, PantryPal helps you reduce waste and enjoy cooking more.
+            <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto md:mx-0 leading-relaxed">
+              Snap a receipt, auto-build your pantry, and get recipe matches in seconds.
+              Reduce waste and make weeknight cooking feel effortless.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <Button size="lg" className="rounded-full text-lg h-12 px-8" onClick={onEnterApp}>
+              <Button size="lg" className="rounded-full text-base h-12 px-8 shadow-sm" onClick={onSignUp}>
                 Get Started Now <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="rounded-full text-base h-12 px-8 bg-background/50"
+                onClick={onLogin}
+              >
+                I already have an account
+              </Button>
             </div>
-            <div className="flex items-center justify-center md:justify-start gap-1 text-sm text-muted-foreground">
-               <div className="flex text-amber-500">
-                 {'★★★★★'}
-               </div>
-               <span className="ml-2">5.0 from 120+ reviews</span>
+            <div className="grid grid-cols-3 gap-3 max-w-xl mx-auto md:mx-0">
+              {[
+                { icon: <ScanLine className="h-4 w-4" />, label: "Scan receipts" },
+                { icon: <Utensils className="h-4 w-4" />, label: "Find recipes" },
+                { icon: <Leaf className="h-4 w-4" />, label: "Reduce waste" },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-border/60 bg-background/50 backdrop-blur px-3 py-3 text-sm text-muted-foreground shadow-xs flex flex-col items-center gap-2"
+                >
+                  <div className="h-9 w-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                    {item.icon}
+                  </div>
+                  <span className="font-medium text-foreground/85">{item.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1 text-amber-500">
+                {'★★★★★'}
+              </div>
+              <span>5.0 from 120+ reviews</span>
+              <span className="hidden sm:inline text-border">•</span>
+              <span>No credit card</span>
             </div>
           </motion.div>
           
           <motion.div 
-            className="flex-1 relative"
+            className="flex-1 relative order-2"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-             <div className="relative aspect-square md:aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 border shadow-2xl flex items-center justify-center">
-                <ChefHat className="h-32 w-32 text-primary/20" />
-                <div className="absolute inset-x-8 bottom-8 p-4 bg-background/90 backdrop-blur rounded-xl shadow-lg border">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-700">
-                            <Sparkles size={20}/>
-                        </div>
-                        <div>
-                            <p className="font-bold text-sm">Recipe Match!</p>
-                            <p className="text-xs text-muted-foreground">Based on your 12 ingredients</p>
-                        </div>
-                    </div>
+            <div className="relative aspect-square md:aspect-[4/3] rounded-3xl overflow-hidden border border-border/60 bg-gradient-to-br from-emerald-200/25 via-background/50 to-teal-200/25 shadow-2xl flex items-center justify-center">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,0,0,0.00),rgba(0,0,0,0.06))]" />
+              <ChefHat className="h-32 w-32 text-primary/20" />
+
+              <div className="absolute left-6 top-6 rounded-2xl border border-border/60 bg-background/70 backdrop-blur px-4 py-3 shadow-sm">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Pantry Snapshot
+                </p>
+                <p className="mt-1 text-sm font-bold">12 ingredients</p>
+              </div>
+
+              <div className="absolute inset-x-6 bottom-6 p-4 bg-background/70 backdrop-blur rounded-2xl shadow-lg border border-border/60">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Sparkles size={20}/>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-sm">Recipe Match</p>
+                    <p className="text-xs text-muted-foreground">Suggestions tailored to your pantry</p>
+                  </div>
+                  <Button size="sm" className="rounded-full" onClick={onSignUp}>
+                    Try
+                  </Button>
                 </div>
-             </div>
+              </div>
+            </div>
           </motion.div>
         </section>
 
