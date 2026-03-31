@@ -12,12 +12,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/store/hooks";
 import { addIngredient, savePantry } from "@/store/slices/ingredientsSlice";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ExtractedItem {
   id: string;
   name: string;
   quantity: string;
+  unit: string;
+  expiryDate: string;
 }
+
+const UNITS = ["pcs", "g", "kg", "oz", "lb", "ml", "L", "cup", "tbsp", "tsp"];
 
 interface AwsResponse {
   text?: string;
@@ -69,6 +74,8 @@ export function ScanView() {
           items: scannedItems.map((item) => ({
             name: item.name,
             quantity: item.quantity || "1",
+            unit: item.unit,
+            expiryDate: item.expiryDate || undefined,
           })),
         },
         null,
@@ -187,17 +194,23 @@ export function ScanView() {
       .trim();
 
     const parsed = JSON.parse(cleaned) as {
-      items?: Array<{ name?: unknown; quantity?: unknown }>;
+      items?: Array<{ name?: unknown; quantity?: unknown; unit?: unknown; expiryDate?: unknown }>;
     };
     const rows = Array.isArray(parsed.items) ? parsed.items : [];
 
     return rows
-      .map((item) => ({
-        id: crypto.randomUUID(),
-        name: typeof item.name === "string" ? item.name.trim() : "",
-        quantity:
-          typeof item.quantity === "string" ? item.quantity.trim() : "1",
-      }))
+      .map((item) => {
+        let qty = typeof item.quantity === "string" ? item.quantity.trim() : "1";
+        if (!qty || qty.toLowerCase() === "unknown") qty = "1";
+        
+        return {
+          id: crypto.randomUUID(),
+          name: typeof item.name === "string" ? item.name.trim() : "",
+          quantity: qty,
+          unit: typeof item.unit === "string" ? item.unit.trim() : "pcs",
+          expiryDate: typeof item.expiryDate === "string" ? item.expiryDate.trim() : "",
+        };
+      })
       // Ignore empty names so users only see valid candidate rows.
       .filter((item) => item.name.length > 0);
   };
@@ -281,7 +294,7 @@ export function ScanView() {
   };
   const updateItem = (
     id: string,
-    field: "name" | "quantity",
+    field: "name" | "quantity" | "unit" | "expiryDate",
     value: string,
   ) => {
     setScannedItems((prev) =>
@@ -296,7 +309,7 @@ export function ScanView() {
   const addManualItem = () => {
     setScannedItems((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), name: "", quantity: "1" },
+      { id: crypto.randomUUID(), name: "", quantity: "1", unit: "pcs", expiryDate: "" },
     ]);
   };
 
@@ -321,6 +334,8 @@ export function ScanView() {
       .map((item) => ({
         name: item.name.trim(),
         quantity: item.quantity.trim() || "1",
+        unit: item.unit,
+        expiryDate: item.expiryDate || undefined,
       }))
       .filter((item) => item.name.length > 0);
 
@@ -348,8 +363,8 @@ export function ScanView() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur">
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur lg:col-span-5">
           <CardHeader>
             <CardTitle>Image Upload</CardTitle>
             <CardDescription>
@@ -453,7 +468,7 @@ export function ScanView() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur">
+        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur lg:col-span-7">
           <CardHeader>
             <CardTitle>Extraction Result</CardTitle>
             <CardDescription>
@@ -475,16 +490,18 @@ export function ScanView() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-[1fr_1fr_auto] gap-2 px-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <div className="grid grid-cols-[minmax(0,1fr)_70px_100px_140px_40px] gap-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     <span>Item Name</span>
-                    <span>Quantity</span>
-                    <span className="text-right">Actions</span>
+                    <span>Qty</span>
+                    <span>Unit</span>
+                    <span>Expiry</span>
+                    <span className="text-right">Action</span>
                   </div>
                   <div className="space-y-2">
                     {scannedItems.map((item) => (
                       <div
                         key={item.id}
-                        className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center rounded-xl border border-border/60 p-2 bg-background/40"
+                        className="grid grid-cols-[minmax(0,1fr)_70px_100px_140px_40px] gap-2 items-center rounded-xl border border-border/60 p-2 bg-background/40"
                       >
                         <Input
                           value={item.name}
@@ -499,8 +516,30 @@ export function ScanView() {
                           onChange={(e) =>
                             updateItem(item.id, "quantity", e.target.value)
                           }
-                          placeholder="Quantity"
+                          placeholder="1"
+                          type="number"
+                          min="0"
+                          step="any"
                           className="rounded-lg bg-background/60"
+                        />
+                        <Select value={item.unit} onValueChange={(val) => updateItem(item.id, "unit", val)}>
+                          <SelectTrigger className="w-full rounded-lg bg-background/60 h-10">
+                            <SelectValue placeholder="Unit" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {UNITS.map((u) => (
+                              <SelectItem key={u} value={u}>{u}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          value={item.expiryDate}
+                          onChange={(e) =>
+                            updateItem(item.id, "expiryDate", e.target.value)
+                          }
+                          type="date"
+                          className="rounded-lg bg-background/60"
+                          title="Expiry date"
                         />
                         <Button
                           variant="ghost"

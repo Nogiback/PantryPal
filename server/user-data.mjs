@@ -653,30 +653,33 @@ const server = createServer(async (req, res) => {
           ranking: 1,
         });
 
-      // `includeIngredients` is an AND filter: the more items you include, the easier it is to get 0 results.
-      // To keep results updating as new pantry items are added, prefer the most recently added items.
-      const maxInclude = 5;
-      let includeIngredients = filteredIncludeIngredients.slice(-maxInclude);
+      // `includeIngredients` is an AND filter.
+      let data = null;
+      let results = [];
+      let totalResults = null;
+      let includeIngredients = [];
       let retriedWithReducedIncludeIngredients = false;
 
-      let data = await fetchSpoonacularJson(buildUrl(includeIngredients));
-      let results = Array.isArray(data?.results) ? data.results : [];
-      let totalResults = typeof data?.totalResults === 'number' ? data.totalResults : null;
-
-      if (results.length === 0 && includeIngredients.length > 3) {
-        includeIngredients = includeIngredients.slice(-3);
-        retriedWithReducedIncludeIngredients = true;
-        data = await fetchSpoonacularJson(buildUrl(includeIngredients));
-        results = Array.isArray(data?.results) ? data.results : [];
-        totalResults = typeof data?.totalResults === 'number' ? data.totalResults : null;
+      const strategies = [];
+      if (filteredIncludeIngredients.length > 0) {
+        if (filteredIncludeIngredients.length >= 5) strategies.push(filteredIncludeIngredients.slice(0, 5));
+        if (filteredIncludeIngredients.length >= 3) strategies.push(filteredIncludeIngredients.slice(0, 3));
+        strategies.push(filteredIncludeIngredients.slice(0, 1));
+        if (filteredIncludeIngredients.length >= 2) strategies.push(filteredIncludeIngredients.slice(1, 2));
       }
+      strategies.push([]); // Ultimate fallback: no ingredient enforced, just use diet/allergies
 
-      if (results.length === 0 && includeIngredients.length > 1) {
-        includeIngredients = includeIngredients.slice(-1);
-        retriedWithReducedIncludeIngredients = true;
+      for (let i = 0; i < strategies.length; i++) {
+        includeIngredients = strategies[i];
+        if (i > 0) retriedWithReducedIncludeIngredients = true;
+
         data = await fetchSpoonacularJson(buildUrl(includeIngredients));
         results = Array.isArray(data?.results) ? data.results : [];
         totalResults = typeof data?.totalResults === 'number' ? data.totalResults : null;
+
+        if (results.length > 0) {
+          break;
+        }
       }
 
       console.log('Spoonacular complexSearch', {
@@ -689,18 +692,62 @@ const server = createServer(async (req, res) => {
         totalResults,
       });
 
-      const normalized = results.map((recipe) => ({
-        id: recipe.id,
-        title: recipe.title,
-        image: recipe.image,
-        imageType: recipe.imageType || 'jpg',
-        usedIngredientCount: recipe.usedIngredientCount ?? 0,
-        missedIngredientCount: recipe.missedIngredientCount ?? 0,
-        missedIngredients: Array.isArray(recipe.missedIngredients) ? recipe.missedIngredients : [],
-        usedIngredients: Array.isArray(recipe.usedIngredients) ? recipe.usedIngredients : [],
-        unusedIngredients: Array.isArray(recipe.unusedIngredients) ? recipe.unusedIngredients : [],
-        likes: recipe.likes ?? 0,
-      }));
+      const fullPantryTokens = originalIngredients.map(normalizeLoose).filter(Boolean);
+
+      const normalized = results.map((recipe) => {
+        const allIngs = [
+          ...(Array.isArray(recipe.usedIngredients) ? recipe.usedIngredients : []),
+          ...(Array.isArray(recipe.missedIngredients) ? recipe.missedIngredients : []),
+          ...(Array.isArray(recipe.unusedIngredients) ? recipe.unusedIngredients : []),
+        ];
+        
+        const unique = [];
+        const seen = new Set();
+        for (const ing of allIngs) {
+          if (!ing || !ing.name) continue;
+          if (!seen.has(ing.id)) {
+            seen.add(ing.id);
+            unique.push(ing);
+          }
+        }
+        
+        const realUsed = [];
+        const realMissed = [];
+        
+        for (const ing of unique) {
+          const ingNorm = normalizeLoose(ing.name);
+          let matched = false;
+          for (const p of fullPantryTokens) {
+            if (ingNorm.includes(p) || p.includes(ingNorm)) {
+              matched = true;
+              break;
+            }
+          }
+          if (matched) realUsed.push(ing);
+          else realMissed.push(ing);
+        }
+
+        return {
+          id: recipe.id,
+          title: recipe.title,
+          image: recipe.image,
+          imageType: recipe.imageType || 'jpg',
+          usedIngredientCount: realUsed.length,
+          missedIngredientCount: realMissed.length,
+          missedIngredients: realMissed,
+          usedIngredients: realUsed,
+          unusedIngredients: [],
+          likes: recipe.likes ?? 0,
+        };
+      });
+
+      // Sort recipes locally by how much of the FULL pantry they use!
+      normalized.sort((a, b) => {
+        if (b.usedIngredientCount !== a.usedIngredientCount) {
+          return b.usedIngredientCount - a.usedIngredientCount;
+        }
+        return a.missedIngredientCount - b.missedIngredientCount;
+      });
 
       sendJson(res, 200, {
         recipes: normalized,

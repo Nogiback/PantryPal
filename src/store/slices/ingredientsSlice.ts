@@ -37,8 +37,10 @@ export const categorizeIngredient = (name: string): string => {
     "Condiments & Oils": ["oil", "vinegar", "mustard", "ketchup", "mayo", "sauce", "dressing", "sugar", "syrup", "honey", "jam", "jelly", "spread", "dip", "salsa", "relish", "soy", "teriyaki", "sriracha"]
   };
 
+  const singular = lowerName.endsWith('ies') ? lowerName.slice(0, -3) + 'y' : lowerName.endsWith('es') ? lowerName.slice(0, -2) : lowerName.endsWith('s') ? lowerName.slice(0, -1) : lowerName;
+
   for (const [category, keywords] of Object.entries(categories)) {
-    if (keywords.some(keyword => lowerName.includes(keyword))) {
+    if (keywords.some(keyword => lowerName.includes(keyword) || singular.includes(keyword))) {
       return category;
     }
   }
