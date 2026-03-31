@@ -2,6 +2,10 @@ export interface Ingredient {
   id: string;
   name: string;
   quantity?: string;
+  unit?: string;
+  expiryDate?: string;
+  notes?: string;
+  category?: string;
 }
 
 export interface Recipe {

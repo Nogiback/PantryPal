@@ -45,7 +45,14 @@ export const fetchRecipes = createAsyncThunk(
   "recipes/fetchByIngredients",
   async (_, { getState }) => {
     const state = getState() as RootState;
-    const includeIngredients = state.ingredients.items.map((i) => i.name);
+    
+    const sortedIngredients = [...state.ingredients.items].sort((a, b) => {
+      const aExpiry = a.expiryDate ? new Date(a.expiryDate).getTime() : Infinity;
+      const bExpiry = b.expiryDate ? new Date(b.expiryDate).getTime() : Infinity;
+      return aExpiry - bExpiry;
+    });
+
+    const includeIngredients = sortedIngredients.map((i) => i.name);
     const onboarding = state.preferences.onboarding;
     const intolerances = onboarding?.allergies ?? [];
     const excludeIngredients = onboarding?.customAvoid ?? [];

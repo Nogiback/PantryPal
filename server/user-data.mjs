@@ -145,7 +145,13 @@ const sanitizePantryPayload = (payload) => {
     const quantity = typeof item.quantity === 'string' ? item.quantity.trim() : '';
     const id =
       typeof item.id === 'string' && item.id.trim() ? item.id.trim() : randomBytes(12).toString('hex');
-    sanitized.push({ id, name, quantity });
+    const obj = { id, name, quantity };
+    if (typeof item.unit === 'string') obj.unit = item.unit.trim();
+    if (typeof item.expiryDate === 'string') obj.expiryDate = item.expiryDate.trim();
+    if (typeof item.notes === 'string') obj.notes = item.notes.trim();
+    if (typeof item.category === 'string') obj.category = item.category.trim();
+
+    sanitized.push(obj);
   }
 
   return sanitized;

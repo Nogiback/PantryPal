@@ -23,6 +23,27 @@ export function RecipesView() {
   } = useAppSelector((state) => state.recipes);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
+  const now = new Date();
+  const expiringSoonNames = useMemo(() => {
+    return new Set(
+      ingredients
+        .filter((ing) => {
+          if (!ing.expiryDate) return false;
+          const diffDays = (new Date(ing.expiryDate).getTime() - now.getTime()) / (1000 * 3600 * 24);
+          return diffDays <= 7;
+        })
+        .map((ing) => ing.name.toLowerCase().trim())
+    );
+  }, [ingredients]);
+
+  const isExpiringMatch = (ingName: string) => {
+    const lower = ingName.toLowerCase();
+    for (const expiringName of expiringSoonNames) {
+      if (lower.includes(expiringName) || expiringName.includes(lower)) return true;
+    }
+    return false;
+  };
+
   const ingredientSignature = useMemo(
     () =>
       ingredients
@@ -238,15 +259,23 @@ export function RecipesView() {
                           </p>
                           <div className="flex flex-wrap gap-1.5">
                             {recipe.usedIngredients.map(
-                              (ing: IngredientInfo) => (
-                                <Badge
-                                  key={ing.id}
-                                  variant="secondary"
-                                  className="bg-green-100/50 text-green-800 hover:bg-green-100 border-0"
-                                >
-                                  {ing.name}
-                                </Badge>
-                              ),
+                              (ing: IngredientInfo) => {
+                                const expiresSoon = isExpiringMatch(ing.name);
+                                return (
+                                  <Badge
+                                    key={ing.id}
+                                    variant="secondary"
+                                    className={
+                                      expiresSoon
+                                        ? "bg-orange-100/80 text-orange-800 hover:bg-orange-200 border-0"
+                                        : "bg-green-100/50 text-green-800 hover:bg-green-100 border-0"
+                                    }
+                                  >
+                                    {ing.name}
+                                    {expiresSoon && <span className="ml-1" title="Expiring soon">⏳</span>}
+                                  </Badge>
+                                );
+                              }
                             )}
                           </div>
                         </div>
