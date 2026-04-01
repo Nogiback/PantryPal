@@ -5,7 +5,7 @@ import { LandingPage } from '@/components/LandingPage';
 import { PantryView } from '@/components/views/PantryView';
 import { ScanView } from '@/components/views/ScanView';
 import { RecipesView } from '@/components/views/RecipesView';
-import { VideosView } from '@/components/views/VideosView';
+import { AiRecipesView } from '@/components/views/AiRecipesView';
 import { LoginView } from '@/components/views/LoginView';
 import { SignupView } from '@/components/views/SignupView';
 import { OnboardingView } from '@/components/views/OnboardingView';
@@ -17,7 +17,7 @@ import { fetchPreferences, clearPreferences } from '@/store/slices/preferencesSl
 function App() {
   const dispatch = useAppDispatch();
   const [view, setView] = useState<'landing' | 'login' | 'signup' | 'onboarding' | 'app'>('landing');
-  const [activeTab, setActiveTab] = useState<'pantry' | 'scan' | 'recipes' | 'videos' | 'profile'>('pantry');
+  const [activeTab, setActiveTab] = useState<'pantry' | 'scan' | 'recipes' | 'ai-recipes' | 'profile'>('pantry');
   const [isBooting, setIsBooting] = useState(true);
 
   useEffect(() => {
@@ -124,7 +124,7 @@ function App() {
       )}
       {activeTab === 'scan' && <ScanView />}
       {activeTab === 'recipes' && <RecipesView />}
-      {activeTab === 'videos' && <VideosView />}
+      {activeTab === 'ai-recipes' && <AiRecipesView />}
       {activeTab === 'profile' && <ProfileView />}
     </Layout>
   );

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutDashboard, ScanLine, ChefHat, LogOut, Menu, VideoIcon, UserRound, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, ScanLine, ChefHat, LogOut, Menu, Sparkles, UserRound, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
@@ -9,21 +9,21 @@ import { cn } from '@/lib/utils';
 interface NavItem {
   label: string;
   icon: React.ReactNode;
-  id: 'pantry' | 'scan' | 'recipes' | 'videos' | 'profile';
+  id: 'pantry' | 'scan' | 'recipes' | 'ai-recipes' | 'profile';
 }
 
 const navItems: NavItem[] = [
   { label: 'Pantry', icon: <LayoutDashboard className="h-4 w-4" />, id: 'pantry' },
   { label: 'Scan', icon: <ScanLine className="h-4 w-4" />, id: 'scan' },
   { label: 'Recipes', icon: <ChefHat className="h-4 w-4" />, id: 'recipes' },
-  { label: 'Watch', icon: <VideoIcon className="h-4 w-4" />, id: 'videos' },
+  { label: 'AI Chef', icon: <Sparkles className="h-4 w-4" />, id: 'ai-recipes' },
   { label: 'Profile', icon: <UserRound className="h-4 w-4" />, id: 'profile' },
 ];
 
 interface LayoutProps {
   children: React.ReactNode;
-  activeTab: 'pantry' | 'scan' | 'recipes' | 'videos' | 'profile';
-  onTabChange: (tab: 'pantry' | 'scan' | 'recipes' | 'videos' | 'profile') => void;
+  activeTab: 'pantry' | 'scan' | 'recipes' | 'ai-recipes' | 'profile';
+  onTabChange: (tab: 'pantry' | 'scan' | 'recipes' | 'ai-recipes' | 'profile') => void;
   onSignOut?: () => void;
 }
 
@@ -108,7 +108,7 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
                 onClick={() => onTabChange(item.id)}
               >
                 {item.icon}
-                <span className="ml-2">{item.label}</span>
+                <span className="">{item.label}</span>
               </Button>
             ))}
           </nav>

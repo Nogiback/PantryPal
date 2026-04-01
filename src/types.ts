@@ -59,14 +59,21 @@ export interface IngredientInfo {
   image: string;
 }
 
-export interface Video {
+export interface AiRecipeIngredient {
+  name: string;
+  quantity: string;
+  fromPantry: boolean;
+}
+
+export interface AiRecipe {
   title: string;
-  youTubeId: string;
-  rating: number;
-  views: number;
-  thumbnail: string;
-  length: number;
-  shortTitle: string;
+  servings: string;
+  estimatedTime: string;
+  ingredients: AiRecipeIngredient[];
+  instructions: string[];
+  finalDish: string;
+  imageUrl?: string;
+  imageQuery?: string;
 }
 
 export interface AnalyzedInstruction {
