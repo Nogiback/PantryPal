@@ -5,6 +5,7 @@ import {
 } from "@/services/spoonacular";
 import type { Recipe, AiRecipe, RecipeDetails, AppliedRecipeFilters } from "@/types";
 import type { RootState } from "../index";
+import { clearPreferences, fetchPreferences, setPreferences } from "./preferencesSlice";
 
 interface RecipesState {
   items: Recipe[];
@@ -140,6 +141,17 @@ const recipesSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Preferences affect recipe results (diet/allergies/goals). Invalidate the cached signature so
+      // navigating back to Recipes triggers a refetch even if the pantry hasn't changed.
+      .addCase(fetchPreferences.fulfilled, (state) => {
+        state.lastRecipeSignature = "";
+      })
+      .addCase(setPreferences, (state) => {
+        state.lastRecipeSignature = "";
+      })
+      .addCase(clearPreferences, (state) => {
+        state.lastRecipeSignature = "";
+      })
       .addCase(fetchRecipes.pending, (state) => {
         state.status = "loading";
         state.items = [];

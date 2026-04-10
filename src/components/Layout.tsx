@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ChefHat,
   ChevronDown,
+  Heart,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -16,7 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-type AppTab = "dashboard" | "pantry" | "scan" | "recipes" | "ai-recipes" | "profile" | "meal-planner";
+type AppTab =
+  | "dashboard"
+  | "pantry"
+  | "scan"
+  | "recipes"
+  | "ai-recipes"
+  | "meal-planner"
+  | "favourites"
+  | "profile";
 
 interface NavItem {
   label: string;
@@ -35,7 +44,7 @@ const planningNav: NavItem[] = [
   { label: "Recipes", caption: "Matches", icon: <ChefHat className="h-4 w-4" />, id: "recipes" },
   { label: "AI Chef", caption: "Suggestions", icon: <Sparkles className="h-4 w-4" />, id: "ai-recipes" },
   { label: "Meal Planner", caption: "This week", icon: <CalendarDays className="h-4 w-4" />, id: "meal-planner" },
-  { label: "Settings", caption: "Profile", icon: <UserRound className="h-4 w-4" />, id: "profile" },
+  { label: "Favourites", caption: "Saved recipes", icon: <Heart className="h-4 w-4" />, id: "favourites" },
 ];
 
 const sidebarNav = [...primaryNav, ...planningNav];
@@ -158,19 +167,19 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
         {isUserMenuOpen && (
           <div className="absolute left-4 right-4 top-[calc(100%+0.65rem)] z-50 rounded-[18px] border border-[#e8eaec] bg-white p-2">
             <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUserMenuOpen(false);
-                  onTabChange("profile");
-                }}
-                className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition hover:bg-[#f8faf8]"
-              >
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#dce9dd] text-[#10120f]">
-                  <UserRound className="h-4 w-4" />
-                </span>
-                <span className="text-sm font-medium text-[#10120f]">Profile</span>
-              </button>
+	              <button
+	                type="button"
+	                onClick={() => {
+	                  setIsUserMenuOpen(false);
+	                  onTabChange("profile");
+	                }}
+	                className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition hover:bg-[#f8faf8]"
+	              >
+	                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#dce9dd] text-[#10120f]">
+	                  <UserRound className="h-4 w-4" />
+	                </span>
+	                <span className="text-sm font-medium text-[#10120f]">Settings</span>
+	              </button>
 
               {onSignOut && (
                 <button
@@ -223,13 +232,15 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
                 </Sheet>
 
                 <div>
-                  <h1 className="page-title text-[#10120f]">
-                    {activeTab === "dashboard"
-                      ? `Welcome, ${user.name?.trim().split(/\s+/)[0] || "there"}`
-                      : sidebarNav.find((item) => item.id === activeTab)?.label || "Workspace"}
-                  </h1>
-                </div>
-              </div>
+	                  <h1 className="page-title text-[#10120f]">
+	                    {activeTab === "dashboard"
+	                      ? `Welcome, ${user.name?.trim().split(/\s+/)[0] || "there"}`
+	                      : activeTab === "profile"
+	                        ? "Settings"
+	                        : sidebarNav.find((item) => item.id === activeTab)?.label || "Workspace"}
+	                  </h1>
+	                </div>
+	              </div>
 
               <div className="flex items-center gap-3">
                 <button

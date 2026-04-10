@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ChefHat, Loader2, Save, UserRound, X } from "lucide-react";
+import { ChefHat, ChevronLeft, ChevronRight, Loader2, Save, Sparkles, UserRound, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch } from "@/store/hooks";
+import { fetchPreferences } from "@/store/slices/preferencesSlice";
+import { getAuthMode, getLocalPreferences, setLocalPreferences } from "@/lib/localAuth";
 
 type Diet =
   | "No restrictions"
@@ -124,6 +128,13 @@ const emptyOnboarding = (): OnboardingPayload => ({
   goals: [],
 });
 
+const questionnaireTitleForStep = (step: number) => {
+  if (step === 1) return "Diet";
+  if (step === 2) return "Allergies";
+  if (step === 3) return "Taste";
+  return "Goals";
+};
+
 const normalizeOnboarding = (raw: unknown): OnboardingPayload => {
   const base = emptyOnboarding();
   if (!raw || typeof raw !== "object") return base;
@@ -158,6 +169,7 @@ const normalizeOnboarding = (raw: unknown): OnboardingPayload => {
 };
 
 export function ProfileView() {
+  const dispatch = useAppDispatch();
   const pantryCount = useAppSelector((state) => state.ingredients.items.length);
   const [user, setUser] = useState<{ id?: string; name?: string; email?: string } | null>(null);
   const [saved, setSaved] = useState<OnboardingPayload>(emptyOnboarding());
@@ -166,8 +178,16 @@ export function ProfileView() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false);
+  const [questionStep, setQuestionStep] = useState(1);
+  const [questionDraft, setQuestionDraft] = useState<OnboardingPayload>(emptyOnboarding());
+  const [questionCustomInput, setQuestionCustomInput] = useState("");
+  const [questionError, setQuestionError] = useState<string | null>(null);
+  const [isQuestionSaving, setIsQuestionSaving] = useState(false);
 
   const initials = useMemo(() => {
     const src = (user?.name || user?.email || "U").trim();
@@ -191,6 +211,31 @@ export function ProfileView() {
           return;
         }
 
+        if (getAuthMode() === "local") {
+          const storedUserRaw = localStorage.getItem("auth_user");
+          const storedUser = storedUserRaw
+            ? (JSON.parse(storedUserRaw) as { id?: unknown; name?: unknown; email?: unknown } | null)
+            : null;
+          const publicUser = storedUser && typeof storedUser === "object"
+            ? {
+                id: typeof storedUser.id === "string" ? storedUser.id : undefined,
+                name: typeof storedUser.name === "string" ? storedUser.name : undefined,
+                email: typeof storedUser.email === "string" ? storedUser.email : undefined,
+              }
+            : null;
+
+          const local = getLocalPreferences();
+          const onboarding = normalizeOnboarding(local.onboarding);
+
+          if (cancelled) return;
+          setUser(publicUser);
+          setSaved(onboarding);
+          setDraft(onboarding);
+          setQuestionDraft(onboarding);
+          setOnboardingCompleted(local.onboardingCompleted === true);
+          return;
+        }
+
         const [meRes, onboardRes] = await Promise.all([
           fetch("/api/auth/me", { method: "GET", headers: { Authorization: `Bearer ${token}` } }),
           fetch("/api/onboarding/me", { method: "GET", headers: { Authorization: `Bearer ${token}` } }),
@@ -200,7 +245,7 @@ export function ProfileView() {
         if (!onboardRes.ok) throw new Error("Could not load preferences.");
 
         const meData = (await meRes.json().catch(() => ({}))) as { user?: unknown };
-        const onboardData = (await onboardRes.json().catch(() => ({}))) as { onboarding?: unknown };
+        const onboardData = (await onboardRes.json().catch(() => ({}))) as { onboarding?: unknown; onboardingCompleted?: unknown };
 
         if (cancelled) return;
         const publicUser = (meData.user ?? null) as { id?: string; name?: string; email?: string } | null;
@@ -209,6 +254,8 @@ export function ProfileView() {
         setUser(publicUser);
         setSaved(onboarding);
         setDraft(onboarding);
+        setQuestionDraft(onboarding);
+        setOnboardingCompleted(onboardData.onboardingCompleted === true);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Could not load profile.");
@@ -228,6 +275,23 @@ export function ProfileView() {
     return () => window.clearTimeout(t);
   }, [message]);
 
+  useEffect(() => {
+    if (isLoading) return;
+    if (isEditing) return;
+    if (onboardingCompleted) return;
+
+    const identity = user?.id || user?.email || "unknown";
+    const key = `pp_questionnaire_prompted_${identity}`;
+    if (localStorage.getItem(key) === "1") return;
+
+    localStorage.setItem(key, "1");
+    setQuestionDraft(saved);
+    setQuestionStep(1);
+    setQuestionCustomInput("");
+    setQuestionError(null);
+    setIsQuestionnaireOpen(true);
+  }, [isEditing, isLoading, onboardingCompleted, saved, user?.email, user?.id]);
+
   const toggleInList = (list: string[], item: string) =>
     list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 
@@ -246,40 +310,72 @@ export function ProfileView() {
     setDraft((d) => ({ ...d, customAvoid: d.customAvoid.filter((x) => x !== name) }));
   };
 
-  const save = async () => {
-    setIsSaving(true);
+  const persistPreferences = async (
+    payload: OnboardingPayload,
+    successMessage: string,
+    onFailure?: (message: string) => void,
+  ) => {
     setError(null);
     setMessage(null);
+
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      const msg = "You are signed out. Please log in again.";
+      setError(msg);
+      onFailure?.(msg);
+      return false;
+    }
+
+    if (getAuthMode() === "local") {
+      setLocalPreferences(payload);
+      dispatch(fetchPreferences());
+      setSaved(payload);
+      setDraft(payload);
+      setQuestionDraft(payload);
+      setOnboardingCompleted(true);
+      setMessage(successMessage);
+      return true;
+    }
+
+    const res = await fetch("/api/onboarding/me", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as { error?: unknown };
+    if (!res.ok) {
+      const msg = typeof data.error === "string" ? data.error : "Could not save preferences.";
+      setError(msg);
+      onFailure?.(msg);
+      return false;
+    }
+
+    setSaved(payload);
+    setDraft(payload);
+    setQuestionDraft(payload);
+    setOnboardingCompleted(true);
+    setMessage(successMessage);
+
+    const stored = localStorage.getItem("auth_user");
+    const parsed = stored ? (JSON.parse(stored) as Record<string, unknown> | null) : null;
+    const updated = { ...(parsed || {}), onboardingCompleted: true, onboarding: payload };
+    localStorage.setItem("auth_user", JSON.stringify(updated));
+
+    // Re-fetch from server so Redux matches what is actually stored in auth.json.
+    dispatch(fetchPreferences());
+
+    return true;
+  };
+
+  const save = async () => {
+    setIsSaving(true);
     try {
-      const token = localStorage.getItem("auth_token");
-      if (!token) {
-        setError("You are signed out. Please log in again.");
-        return;
-      }
-
-      const res = await fetch("/api/onboarding/me", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(draft),
-      });
-
-      const data = (await res.json().catch(() => ({}))) as { error?: unknown };
-      if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Could not save preferences.");
-        return;
-      }
-
-      setSaved(draft);
-      setIsEditing(false);
-      setMessage("Preferences updated.");
-
-      const stored = localStorage.getItem("auth_user");
-      const parsed = stored ? (JSON.parse(stored) as Record<string, unknown> | null) : null;
-      const updated = { ...(parsed || {}), onboardingCompleted: true, onboarding: draft };
-      localStorage.setItem("auth_user", JSON.stringify(updated));
+      const ok = await persistPreferences(draft, "Preferences updated.");
+      if (ok) setIsEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save preferences.");
     } finally {
@@ -295,6 +391,44 @@ export function ProfileView() {
     setIsEditing(false);
   };
 
+  const openQuestionnaire = () => {
+    setQuestionDraft(saved);
+    setQuestionStep(1);
+    setQuestionCustomInput("");
+    setQuestionError(null);
+    setIsQuestionnaireOpen(true);
+  };
+
+  const addQuestionCustomAvoid = () => {
+    const trimmed = questionCustomInput.trim();
+    if (!trimmed) return;
+    if (questionDraft.customAvoid.some((x) => x.toLowerCase() === trimmed.toLowerCase())) {
+      setQuestionCustomInput("");
+      return;
+    }
+    setQuestionDraft((d) => ({ ...d, customAvoid: [...d.customAvoid, trimmed] }));
+    setQuestionCustomInput("");
+  };
+
+  const removeQuestionCustomAvoid = (name: string) => {
+    setQuestionDraft((d) => ({ ...d, customAvoid: d.customAvoid.filter((x) => x !== name) }));
+  };
+
+  const saveQuestionnaire = async () => {
+    setQuestionError(null);
+    setIsQuestionSaving(true);
+    try {
+      const ok = await persistPreferences(questionDraft, "Preferences saved.", setQuestionError);
+      if (!ok) return;
+      setIsQuestionnaireOpen(false);
+      setQuestionStep(1);
+    } catch (err) {
+      setQuestionError(err instanceof Error ? err.message : "Could not save preferences.");
+    } finally {
+      setIsQuestionSaving(false);
+    }
+  };
+
   return (
     <motion.div
       className="space-y-6"
@@ -308,6 +442,17 @@ export function ProfileView() {
           <p className="text-muted-foreground">Manage your profile and recipe preferences.</p>
         </div>
         <div className="flex gap-2">
+          {!isEditing ? (
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={openQuestionnaire}
+              disabled={isLoading}
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="ml-2">Questionnaire</span>
+            </Button>
+          ) : null}
           {!isEditing ? (
             <Button
               variant="outline"
@@ -344,6 +489,240 @@ export function ProfileView() {
 
       {error && <div className="p-3 rounded-xl bg-red-50 text-red-700 border border-red-100 text-sm">{error}</div>}
       {message && <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100 text-sm">{message}</div>}
+
+      {!isLoading && !onboardingCompleted && (
+        <div className="rounded-[18px] border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-foreground flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="font-semibold">Finish setup</div>
+            <div className="text-muted-foreground">Answer a few questions to personalize recipes and defaults.</div>
+          </div>
+          <Button className="rounded-full" onClick={openQuestionnaire}>
+            Start questionnaire
+          </Button>
+        </div>
+      )}
+
+      <Dialog
+        open={isQuestionnaireOpen}
+        onOpenChange={(open) => {
+          setIsQuestionnaireOpen(open);
+          if (!open) {
+            setQuestionStep(1);
+            setQuestionCustomInput("");
+            setQuestionError(null);
+            setIsQuestionSaving(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl border-border/60 bg-background/95 shadow-2xl sm:rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between gap-3 pr-10">
+              <span>Preferences questionnaire</span>
+              <Badge variant="secondary" className="rounded-full">
+                Step {questionStep} of 4
+              </Badge>
+            </DialogTitle>
+            <DialogDescription>
+              {questionnaireTitleForStep(questionStep)} — this helps Pantry Pal tailor suggestions to you.
+            </DialogDescription>
+          </DialogHeader>
+
+          {questionError && (
+            <div className="p-3 rounded-xl bg-red-50 text-red-700 border border-red-100 text-sm">{questionError}</div>
+          )}
+
+          <div className="space-y-5">
+            {questionStep === 1 && (
+              <div className="space-y-3">
+                <div className="space-y-0.5">
+                  <div className="font-semibold">Diet</div>
+                  <div className="text-sm text-muted-foreground">Choose what best describes your diet.</div>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {dietOptions.map((diet) => (
+                    <TogglePill
+                      key={diet}
+                      label={diet}
+                      selected={questionDraft.dietaryPreference === diet}
+                      onClick={() => setQuestionDraft((d) => ({ ...d, dietaryPreference: diet }))}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {questionStep === 2 && (
+              <div className="space-y-3">
+                <div className="space-y-0.5">
+                  <div className="font-semibold">Allergies & avoids</div>
+                  <div className="text-sm text-muted-foreground">We’ll avoid these in your recipes.</div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {allergyOptions.map((allergy) => (
+                    <CheckboxPill
+                      key={allergy}
+                      label={allergy}
+                      checked={questionDraft.allergies.includes(allergy)}
+                      onToggle={() =>
+                        setQuestionDraft((d) => ({ ...d, allergies: toggleInList(d.allergies, allergy) }))
+                      }
+                    />
+                  ))}
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <Label htmlFor="questionCustomAvoid" className="text-sm">
+                    Add custom ingredient to avoid
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="questionCustomAvoid"
+                      value={questionCustomInput}
+                      placeholder="e.g. cilantro"
+                      onChange={(e) => setQuestionCustomInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addQuestionCustomAvoid();
+                        }
+                      }}
+                    />
+                    <Button type="button" variant="outline" onClick={addQuestionCustomAvoid}>
+                      Add
+                    </Button>
+                  </div>
+
+                  {questionDraft.customAvoid.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {questionDraft.customAvoid.map((item) => (
+                        <Badge key={item} variant="secondary" className="rounded-full pr-1">
+                          <span className="mr-1">{item}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-full hover:bg-black/5"
+                            onClick={() => removeQuestionCustomAvoid(item)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {questionStep === 3 && (
+              <div className="space-y-3">
+                <div className="space-y-0.5">
+                  <div className="font-semibold">Taste</div>
+                  <div className="text-sm text-muted-foreground">Help us match flavors you enjoy.</div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {flavorOptions.map((flavor) => (
+                    <CheckboxPill
+                      key={flavor}
+                      label={flavor}
+                      checked={questionDraft.taste.flavors.includes(flavor)}
+                      onToggle={() =>
+                        setQuestionDraft((d) => ({
+                          ...d,
+                          taste: { ...d.taste, flavors: toggleInList(d.taste.flavors, flavor) as Flavor[] },
+                        }))
+                      }
+                    />
+                  ))}
+                </div>
+
+                <div className="pt-2 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Spice level</span>
+                    <Badge variant="secondary" className="rounded-full">
+                      {questionDraft.taste.spiceLevel}/4
+                    </Badge>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={4}
+                    step={1}
+                    value={questionDraft.taste.spiceLevel}
+                    onChange={(e) =>
+                      setQuestionDraft((d) => ({
+                        ...d,
+                        taste: { ...d.taste, spiceLevel: Number(e.target.value) },
+                      }))
+                    }
+                    className="w-full accent-primary"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Mild</span>
+                    <span>Very spicy</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {questionStep === 4 && (
+              <div className="space-y-3">
+                <div className="space-y-0.5">
+                  <div className="font-semibold">Goals</div>
+                  <div className="text-sm text-muted-foreground">What are you aiming for?</div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {goalOptions.map((goal) => (
+                    <CheckboxPill
+                      key={goal}
+                      label={goal}
+                      checked={questionDraft.goals.includes(goal)}
+                      onToggle={() => setQuestionDraft((d) => ({ ...d, goals: toggleInList(d.goals, goal) }))}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="sm:justify-between">
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => setQuestionStep((s) => Math.max(1, s - 1))}
+                disabled={questionStep === 1 || isQuestionSaving}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="ml-2">Back</span>
+              </Button>
+            </div>
+
+            <div className="flex gap-2">
+              {questionStep < 4 ? (
+                <Button
+                  type="button"
+                  className="rounded-full"
+                  onClick={() => setQuestionStep((s) => Math.min(4, s + 1))}
+                  disabled={isQuestionSaving}
+                >
+                  <span className="mr-2">Next</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button type="button" className="rounded-full" onClick={saveQuestionnaire} disabled={isQuestionSaving}>
+                  {isQuestionSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  <span className="ml-2">{isQuestionSaving ? "Saving…" : "Save"}</span>
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-2 border-border/60 bg-background/75">

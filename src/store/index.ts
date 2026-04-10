@@ -3,6 +3,7 @@ import ingredientsReducer from './slices/ingredientsSlice';
 import recipesReducer from './slices/recipesSlice';
 import preferencesReducer from './slices/preferencesSlice';
 import mealPlannerReducer from './slices/mealPlannerSlice';
+import favoritesReducer from './slices/favoritesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     recipes: recipesReducer,
     preferences: preferencesReducer,
     mealPlanner: mealPlannerReducer,
+    favorites: favoritesReducer,
   },
 });
 

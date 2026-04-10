@@ -4,10 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { ChefHat, Loader2, RefreshCw, Search, CalendarPlus, CalendarMinus } from "lucide-react";
+import { ChefHat, Loader2, RefreshCw, Search, CalendarPlus, CalendarMinus, Heart } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchRecipes, fetchRecipeDetails } from "@/store/slices/recipesSlice";
+import { clearSelectedRecipe, fetchRecipes, fetchRecipeDetails } from "@/store/slices/recipesSlice";
 import { addRecipeToPlan, removeRecipeFromPlan } from "@/store/slices/mealPlannerSlice";
+import { toggleFavorite } from "@/store/slices/favoritesSlice";
 import type { IngredientInfo, Recipe } from "@/types";
 import { RecipeDetailsModal } from "@/components/RecipeDetailsModal";
 
@@ -22,8 +23,10 @@ export function RecipesView() {
     selectedRecipeDetails,
     detailsStatus,
   } = useAppSelector((state) => state.recipes);
-  const plannedRecipes = useAppSelector((state) => state.mealPlanner.plannedRecipes);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+	  const plannedRecipes = useAppSelector((state) => state.mealPlanner.plannedRecipes);
+	  const favorites = useAppSelector((state) => state.favorites.items);
+	  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+	  const [detailsId, setDetailsId] = useState<number | null>(null);
 
   const now = new Date();
   const expiringSoonNames = useMemo(() => {
@@ -93,16 +96,25 @@ export function RecipesView() {
     }
   };
 
-  const handleViewRecipe = (id: number) => {
-    dispatch(fetchRecipeDetails(id));
-    setIsDetailsOpen(true);
-  };
+	  const handleViewRecipe = (id: number) => {
+	    setDetailsId(id);
+	    dispatch(fetchRecipeDetails(id));
+	    setIsDetailsOpen(true);
+	  };
 
-  const handleCloseDetails = () => {
-    setIsDetailsOpen(false);
-  };
+	  const handleCloseDetails = () => {
+	    setIsDetailsOpen(false);
+	    setDetailsId(null);
+	    dispatch(clearSelectedRecipe());
+	  };
 
-  const isPlanned = (id: number) => plannedRecipes.some(r => r.id === id.toString() && r.sourceType === 'api');
+	  const isPlanned = (id: number) => plannedRecipes.some(r => r.id === id.toString() && r.sourceType === 'api');
+	  const isFav = (id: number) => favorites.some((r) => r.id === id);
+	  const isDetailsLoading =
+	    isDetailsOpen &&
+	    detailsId !== null &&
+	    (detailsStatus === "loading" ||
+	      (selectedRecipeDetails?.id !== detailsId && detailsStatus !== "failed"));
 
   const toggleMealPlan = (recipe: Recipe) => {
     if (isPlanned(recipe.id)) {
@@ -243,22 +255,48 @@ export function RecipesView() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-20 pt-2">
-              {recipes.map((recipe) => (
-                  <Card key={recipe.id} className="flex flex-col h-full overflow-hidden border-[#e8eaec] bg-white py-0">
-                    <div className="relative h-48 w-full overflow-hidden">
-                      <img
+	            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-20 pt-2">
+	              {recipes.map((recipe) => {
+	                  const fav = isFav(recipe.id);
+	                  return (
+	                  <Card key={recipe.id} className="flex flex-col h-full overflow-hidden border-[#e8eaec] bg-white py-0">
+	                    <div className="relative h-48 w-full overflow-hidden">
+	                      <img
                         src={recipe.image}
                         alt={recipe.title}
                         className="object-cover w-full h-full"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-black/45 flex items-end p-4">
-                        <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 drop-shadow-sm">
-                          {recipe.title}
-                        </h3>
-                      </div>
-                    </div>
+	                        loading="lazy"
+	                      />
+	                      <button
+	                        type="button"
+	                        className={[
+	                          "absolute right-3 top-3 z-10 rounded-full p-2 backdrop-blur transition",
+	                          "bg-white/85 hover:bg-white shadow-sm",
+	                          fav ? "text-rose-600" : "text-slate-700",
+	                        ].join(" ")}
+	                        aria-label={fav ? "Remove from favorites" : "Add to favorites"}
+	                        title={fav ? "Remove from favorites" : "Add to favorites"}
+	                        onClick={(e) => {
+	                          e.preventDefault();
+	                          e.stopPropagation();
+	                          dispatch(
+	                            toggleFavorite({
+	                              id: recipe.id,
+	                              title: recipe.title,
+	                              image: recipe.image,
+	                              imageType: recipe.imageType,
+	                            }),
+	                          );
+	                        }}
+	                      >
+	                        <Heart className="h-4 w-4" fill={fav ? "currentColor" : "none"} />
+	                      </button>
+	                      <div className="absolute inset-0 bg-black/45 flex items-end p-4">
+	                        <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 drop-shadow-sm">
+	                          {recipe.title}
+	                        </h3>
+	                      </div>
+	                    </div>
 
                     <CardContent className="flex-1 p-4 space-y-4">
                       <div className="space-y-3">
@@ -338,19 +376,20 @@ export function RecipesView() {
                         <span className="truncate">{isPlanned(recipe.id) ? "Planned" : "Plan"}</span>
                       </Button>
                     </div>
-                  </Card>
-              ))}
-            </div>
+	                  </Card>
+	                );
+	              })}
+	            </div>
           )}
         </ScrollArea>
       </div>
 
-      <RecipeDetailsModal
-        recipe={selectedRecipeDetails}
-        isOpen={isDetailsOpen}
-        onClose={handleCloseDetails}
-        isLoading={detailsStatus === "loading"}
-      />
-    </motion.div>
-  );
-}
+	      <RecipeDetailsModal
+	        recipe={detailsId && selectedRecipeDetails?.id === detailsId ? selectedRecipeDetails : null}
+	        isOpen={isDetailsOpen}
+	        onClose={handleCloseDetails}
+	        isLoading={isDetailsLoading}
+	      />
+	    </motion.div>
+	  );
+	}

@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 const loadDotEnv = () => {
   const envCandidates = [path.resolve(process.cwd(), '.env'), path.resolve(__dirname, '..', '.env')];
   const envPath = envCandidates.find((candidate) => existsSync(candidate));
-  if (!envPath) return;
+  if (!envPath) return null;
 
   const content = readFileSync(envPath, 'utf8');
   for (const line of content.split(/\r?\n/)) {
@@ -31,9 +31,11 @@ const loadDotEnv = () => {
     }
     if (!process.env[key]) process.env[key] = value;
   }
+
+  return envPath;
 };
 
-loadDotEnv();
+const loadedEnvPath = loadDotEnv();
 
 const PORT = Number(process.env.USER_DATA_PORT || 8788);
 const HOST = process.env.USER_DATA_HOST || '127.0.0.1';
@@ -191,6 +193,10 @@ const SPOONACULAR_API_KEYS = String(
   .map((k) => k.trim())
   .filter(Boolean);
 
+console.log(
+  `[user-data] env=${loadedEnvPath ?? 'none'} spoonacularKeys=${SPOONACULAR_API_KEYS.length} baseUrl=${SPOONACULAR_API_BASE_URL}`,
+);
+
 let spoonacularKeyIndex = 0;
 const getCurrentSpoonacularKey = () => SPOONACULAR_API_KEYS[spoonacularKeyIndex] || '';
 const rotateSpoonacularKey = () => {
@@ -212,7 +218,7 @@ const buildSpoonacularUrl = (pathName, params) => {
 const fetchSpoonacularJson = async (urlWithoutKey) => {
   if (SPOONACULAR_API_KEYS.length === 0) {
     const error = new Error(
-      'Spoonacular API key is not configured. Set SPOONACULAR_API_KEY (or SPOONACULAR_API_KEYS).',
+      'Spoonacular API key is not configured. Set SPOONACULAR_API_KEY or SPOONACULAR_API_KEYS in your .env, then restart `npm run dev:user`. (Fallback also supported: VITE_SPOONACULAR_API_KEY, but that exposes the key to the browser.)',
     );
     error.code = 'NO_KEY';
     throw error;
@@ -582,6 +588,21 @@ const server = createServer(async (req, res) => {
   }
 
   // ---- Spoonacular proxy ----
+  if (req.method === 'GET' && req.url === '/api/spoonacular/status') {
+    sendJson(res, 200, {
+      envPath: loadedEnvPath ?? null,
+      baseUrl: SPOONACULAR_API_BASE_URL,
+      keysConfigured: SPOONACULAR_API_KEYS.length > 0,
+      keysCount: SPOONACULAR_API_KEYS.length,
+      sources: {
+        SPOONACULAR_API_KEY: Boolean(process.env.SPOONACULAR_API_KEY),
+        SPOONACULAR_API_KEYS: Boolean(process.env.SPOONACULAR_API_KEYS),
+        VITE_SPOONACULAR_API_KEY: Boolean(process.env.VITE_SPOONACULAR_API_KEY),
+      },
+    });
+    return;
+  }
+
   if (req.method === 'POST' && req.url === '/api/recipes/spoonacular') {
     try {
       const raw = await readRequestBody(req);

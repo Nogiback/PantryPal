@@ -11,10 +11,13 @@ import { LoginView } from '@/components/views/LoginView';
 import { SignupView } from '@/components/views/SignupView';
 import { OnboardingView } from '@/components/views/OnboardingView';
 import { ProfileView } from '@/components/views/ProfileView';
+import { FavoritesView } from '@/components/views/FavoritesView';
 import { MealPlannerView } from '@/components/views/MealPlannerView';
 import { useAppDispatch } from '@/store/hooks';
 import { fetchPantry, clearIngredients, setIngredients } from '@/store/slices/ingredientsSlice';
 import { fetchPreferences, clearPreferences, setPreferences } from '@/store/slices/preferencesSlice';
+import { clearFavorites, fetchFavorites } from '@/store/slices/favoritesSlice';
+import { fetchMealPlanner, resetMealPlanner } from '@/store/slices/mealPlannerSlice';
 import {
   clearAuthMode,
   getAuthMode,
@@ -26,8 +29,23 @@ import {
 function App() {
   const dispatch = useAppDispatch();
   const [view, setView] = useState<'landing' | 'login' | 'signup' | 'onboarding' | 'app'>('landing');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'pantry' | 'scan' | 'recipes' | 'ai-recipes' | 'profile' | 'meal-planner'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pantry' | 'scan' | 'recipes' | 'ai-recipes' | 'profile' | 'meal-planner' | 'favourites'>('dashboard');
   const [isBooting, setIsBooting] = useState(true);
+
+  const shouldShowOnboarding = () => {
+    const mode = getAuthMode();
+    if (mode === 'local') {
+      return getLocalPreferences().onboardingCompleted !== true;
+    }
+
+    try {
+      const raw = localStorage.getItem('auth_user');
+      const parsed = raw ? (JSON.parse(raw) as Record<string, unknown> | null) : null;
+      return parsed?.onboardingCompleted !== true;
+    } catch {
+      return true;
+    }
+  };
 
   const hydrateLocalState = () => {
     const localPreferences = getLocalPreferences();
@@ -54,7 +72,11 @@ function App() {
 
     if (authMode === 'local') {
       hydrateLocalState();
+      const needsOnboarding = shouldShowOnboarding();
+      setActiveTab(needsOnboarding ? 'profile' : 'dashboard');
       setView('app');
+      dispatch(fetchFavorites());
+      dispatch(fetchMealPlanner());
       setIsBooting(false);
       return;
     }
@@ -75,12 +97,16 @@ function App() {
         const data = (await res.json().catch(() => ({}))) as { user?: unknown };
         localStorage.setItem('auth_user', JSON.stringify(data.user ?? null));
 
+        const needsOnboarding = shouldShowOnboarding();
+        setActiveTab(needsOnboarding ? 'profile' : 'dashboard');
         setView('app');
 
         // Hydrate Redux with server-backed data for the signed-in user.
         localStorage.setItem('auth_mode', 'server');
         dispatch(fetchPreferences());
         dispatch(fetchPantry());
+        dispatch(fetchFavorites());
+        dispatch(fetchMealPlanner());
       } catch {
         const revivedUser = reviveLocalSessionFromStoredUser();
         if (revivedUser) {
@@ -99,15 +125,20 @@ function App() {
   }, []);
 
   const handleAuthSuccess = () => {
-    setActiveTab('dashboard');
+    const needsOnboarding = shouldShowOnboarding();
+    setActiveTab(needsOnboarding ? 'profile' : 'dashboard');
     setView('app');
     if (getAuthMode() === 'local') {
       hydrateLocalState();
+      dispatch(fetchFavorites());
+      dispatch(fetchMealPlanner());
       return;
     }
 
     dispatch(fetchPreferences());
     dispatch(fetchPantry());
+    dispatch(fetchFavorites());
+    dispatch(fetchMealPlanner());
   };
 
   if (isBooting) {
@@ -156,6 +187,8 @@ function App() {
         clearAuthMode();
         dispatch(clearPreferences());
         dispatch(clearIngredients());
+        dispatch(clearFavorites());
+        dispatch(resetMealPlanner());
         setActiveTab('dashboard');
         setView('landing');
       }}
@@ -168,6 +201,7 @@ function App() {
       {activeTab === 'recipes' && <RecipesView />}
       {activeTab === 'ai-recipes' && <AiRecipesView />}
       {activeTab === 'meal-planner' && <MealPlannerView />}
+      {activeTab === 'favourites' && <FavoritesView />}
       {activeTab === 'profile' && <ProfileView />}
     </Layout>
   );

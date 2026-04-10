@@ -386,7 +386,10 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f8f7f2] text-[#10120f]">
       <header ref={heroRef} className="fixed inset-x-0 top-0 z-40 w-full border-b border-[#e8eaec] bg-[#f8f7f2]">
-        <div data-topbar className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div
+          data-topbar
+          className="mx-auto flex w-full max-w-screen-2xl items-center justify-between px-4 py-4 sm:px-5 lg:px-7"
+        >
           <button
             type="button"
             onClick={() => scrollToId("top")}
@@ -421,8 +424,11 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
         </div>
       </header>
 
-      <main id="top" className="flex w-full flex-col gap-24 pb-24 pt-28">
-        <section className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+      <main
+        id="top"
+        className="mx-auto flex w-full max-w-screen-2xl flex-col gap-24 px-4 pb-24 pt-28 sm:px-5 lg:px-7"
+      >
+        <section className="grid gap-8 lg:gap-4 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div data-hero-left className="max-w-xl">
             <p className="lp-eyebrow">Smart kitchen tools for modern homes</p>
             <h1 className="display-font mt-5 text-[clamp(3.15rem,7vw,6.1rem)] leading-[0.95] tracking-[-0.06em] text-[#10120f]">

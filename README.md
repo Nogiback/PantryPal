@@ -71,6 +71,16 @@ npm install
 npm run dev
 ```
 
+This UI proxies API calls to two local Node servers:
+
+```bash
+npm run dev:api
+```
+
+```bash
+npm run dev:user
+```
+
 ## AWS Bedrock Vision Setup (Key Hidden on Server)
 
 Feature flow:
@@ -99,4 +109,20 @@ npm run dev:api
 
 ```bash
 npm run dev
+```
+
+## Spoonacular Setup (Recipes/Videos)
+
+Create a `.env` file in project root:
+
+```bash
+SPOONACULAR_API_BASE_URL=https://api.spoonacular.com
+SPOONACULAR_API_KEYS=your_spoonacular_key_1,your_spoonacular_key_2
+USER_DATA_PORT=8788
+```
+
+Start the proxy server:
+
+```bash
+npm run dev:user
 ```
