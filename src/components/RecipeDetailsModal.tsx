@@ -17,8 +17,12 @@ import {
   ChefHat,
   CheckCircle2,
   X,
+  CalendarPlus,
+  CalendarMinus,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addRecipeToPlan, removeRecipeFromPlan } from "@/store/slices/mealPlannerSlice";
 
 interface RecipeDetailsProps {
   recipe: RecipeDetails | null;
@@ -33,11 +37,36 @@ export function RecipeDetailsModal({
   onClose,
   isLoading,
 }: RecipeDetailsProps) {
+  const dispatch = useAppDispatch();
+  const plannedRecipes = useAppSelector((state) => state.mealPlanner.plannedRecipes);
+
+  const isPlanned = recipe ? plannedRecipes.some(r => r.id === recipe.id.toString() && r.sourceType === 'api') : false;
+
+  const toggleMealPlan = () => {
+    if (!recipe) return;
+    if (isPlanned) {
+      dispatch(removeRecipeFromPlan(recipe.id.toString()));
+    } else {
+      const required = recipe.extendedIngredients?.map((ing) => ({
+        name: ing.name,
+        quantity: `${ing.amount} ${ing.unit}`
+      })) || [];
+      dispatch(addRecipeToPlan({
+        id: recipe.id.toString(),
+        sourceType: 'api',
+        title: recipe.title,
+        image: recipe.image,
+        requiredIngredients: required,
+        originalRecipe: recipe
+      }));
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl p-0 overflow-hidden h-[90vh] md:h-[85vh] flex flex-col gap-0 border-0 rounded-2xl shadow-2xl bg-background/95 backdrop-blur-md">
+      <DialogContent className="max-w-5xl p-0 overflow-hidden h-[90vh] md:h-[85vh] flex flex-col gap-0 border-0 rounded-2xl bg-background/95 backdrop-blur-md">
         {isLoading ? (
-          <div className="flex h-full w-full items-center justify-center flex-col gap-6 bg-linear-to-br from-background to-muted/20">
+          <div className="flex h-full w-full items-center justify-center flex-col gap-6 bg-background">
             <div className="relative">
               <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
               <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary border-r-4 border-r-transparent"></div>
@@ -81,7 +110,7 @@ export function RecipeDetailsModal({
                   alt={recipe.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent"></div>
+                <div className="absolute inset-0 bg-black/50"></div>
 
                 {/* Floating Meta Cards - Desktop only or stack on mobile image */}
                 <div className="absolute bottom-6 left-6 right-6 flex flex-wrap gap-3">
@@ -260,7 +289,7 @@ export function RecipeDetailsModal({
                             )}
                           </ol>
                         ) : (
-                          <div className="p-12 text-center bg-muted/20 rounded-3xl border-2 border-dashed flex flex-col items-center gap-6">
+                          <div className="p-12 text-center bg-muted/20 rounded-3xl border border-border/60 flex flex-col items-center gap-6">
                             <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
                               <ExternalLink className="w-8 h-8 text-muted-foreground" />
                             </div>
@@ -305,20 +334,32 @@ export function RecipeDetailsModal({
                             new URL(recipe.sourceUrl).hostname}
                         </p>
                       </div>
-                      <Button
-                        asChild
-                        size="lg"
-                        className="rounded-full px-10 shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all font-bold"
-                      >
-                        <a
-                          href={recipe.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2"
+                      <div className="flex gap-3">
+                        <Button
+                          variant={isPlanned ? "secondary" : "default"}
+                          size="lg"
+                          className={`rounded-full px-8 shadow-xl transition-all font-bold ${isPlanned ? "text-primary bg-primary/10 hover:bg-primary/20 shadow-none border border-primary/20" : "shadow-primary/20 hover:shadow-primary/30"}`}
+                          onClick={toggleMealPlan}
                         >
-                          Full Details <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </Button>
+                          {isPlanned ? <CalendarMinus className="w-5 h-5 mr-2" /> : <CalendarPlus className="w-5 h-5 mr-2" />}
+                          {isPlanned ? "Planned" : "Add to Plan"}
+                        </Button>
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="lg"
+                          className="rounded-full px-8 transition-all font-bold"
+                        >
+                          <a
+                            href={recipe.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2"
+                          >
+                            Full Details <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </Button>
+                      </div>
                     </footer>
                   </div>
                 </ScrollArea>

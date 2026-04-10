@@ -42,7 +42,7 @@ export function RecipeDetailsSheet({ recipe, isOpen, onClose, isLoading }: Recip
                 alt={recipe.title}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6">
+              <div className="absolute inset-0 bg-black/55 flex flex-col justify-end p-6">
                 <div className="flex gap-2 mb-2">
                     {recipe.dishTypes?.slice(0, 3).map(type => (
                         <Badge key={type} className="w-fit bg-primary/90 hover:bg-primary border-0 capitalize">
@@ -154,7 +154,7 @@ export function RecipeDetailsSheet({ recipe, isOpen, onClose, isLoading }: Recip
                       ))}
                     </div>
                   ) : (
-                    <div className="p-8 text-center bg-muted/20 rounded-lg border border-dashed">
+                    <div className="p-8 text-center bg-muted/20 rounded-lg border border-border/60">
                         <p className="text-muted-foreground italic">No detailed instructions available within the app.</p>
                         <Button variant="link" asChild className="mt-2">
                             <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer">Try viewing the original website</a>

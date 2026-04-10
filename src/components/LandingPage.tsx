@@ -1,224 +1,744 @@
-import { motion } from 'framer-motion';
-import { ChefHat, ScanLine, Utensils, Users, ArrowRight, Leaf, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useEffect, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { motion } from "framer-motion";
 
 interface LandingPageProps {
-  onEnterApp: () => void;
+  onLogin: () => void;
+  onSignUp: () => void;
 }
 
-export function LandingPage({ onEnterApp }: LandingPageProps) {
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5 }
+const HEADLINE_WORDS = ["pantry", "recipes", "planning", "routine"];
+
+const TOOLKIT = [
+  {
+    title: "Set up fast",
+    icon: "spark",
+    text: "Add staple items, scan what is already in the kitchen, and build a usable pantry list in minutes.",
+  },
+  {
+    title: "Plan with clarity",
+    icon: "calendar",
+    text: "Turn ingredients, recipes, and grocery needs into a weekly plan that feels calm instead of chaotic.",
+  },
+  {
+    title: "Cook with confidence",
+    icon: "message",
+    text: "Get practical recipe ideas based on what is on hand so fewer ingredients go unused at the back of the shelf.",
+  },
+];
+
+const FEATURES = [
+  {
+    title: "Pantry tracking",
+    icon: "fridge",
+    text: "Keep ingredients, quantities, and expiry dates in one simple view.",
+  },
+  {
+    title: "Recipe matching",
+    icon: "recipe",
+    text: "Turn what is already at home into recipe suggestions people can actually use.",
+  },
+  {
+    title: "Meal plans",
+    icon: "calendar",
+    text: "Map breakfast, lunch, dinner, and prep in one weekly routine.",
+  },
+  {
+    title: "Household sharing",
+    icon: "users",
+    text: "Let families and roommates keep lists and pantry updates aligned.",
+  },
+];
+
+const INTEGRATIONS = [
+  {
+    title: "Barcode scan",
+    icon: "barcode",
+    text: "Scan packaged items quickly and add them to your pantry without typing every detail by hand.",
+  },
+  {
+    title: "Receipt import",
+    icon: "receipt",
+    text: "Pull recent grocery purchases into Pantry Pal so your inventory stays current after every shop.",
+  },
+  {
+    title: "Shopping list sync",
+    icon: "cart",
+    text: "Keep shared shopping lists in one place so everyone in the household knows what still needs to be picked up.",
+  },
+  {
+    title: "Calendar reminders",
+    icon: "clock",
+    text: "Stay on track with prep reminders, grocery days, and meal-plan prompts throughout the week.",
+  },
+];
+
+const RESOURCES = [
+  {
+    title: "Pantry organization guide",
+    icon: "book",
+    text: "Learn how to organize staples, reduce duplicate purchases, and keep ingredients easier to use.",
+  },
+  {
+    title: "Weekly meal planning tips",
+    icon: "clipboard",
+    text: "Build a simple routine for breakfast, lunch, dinner, and leftovers without overplanning your week.",
+  },
+  {
+    title: "Getting started with Pantry Pal",
+    icon: "download",
+    text: "See how to set up your pantry, invite your household, and start getting smarter recipe suggestions right away.",
+  },
+];
+
+const FAQS = [
+  {
+    question: "What can I do with Pantry Pal?",
+    answer:
+      "Pantry Pal helps you track ingredients, plan meals, build grocery lists, and find recipes based on what you already have at home.",
+  },
+  {
+    question: "Can I use Pantry Pal with my family or roommates?",
+    answer:
+      "Yes. Pantry updates, shopping lists, and meal plans are designed to be easier to manage across a shared household.",
+  },
+  {
+    question: "How does Pantry Pal help reduce food waste?",
+    answer:
+      "By showing what is already available, surfacing ingredients nearing expiry, and suggesting recipes that use them before they are forgotten.",
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "Pantry Pal helps me plan meals around what I already have, and that alone has made grocery shopping feel calmer and much more intentional.",
+    author: "Maya Adebisi",
+    company: "Busy home cook",
+    image:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=1400&q=80",
+  },
+  {
+    quote:
+      "I love that it turns pantry ingredients into actual dinner ideas. It feels practical, clear, and built around how people really cook at home.",
+    author: "Jordan Mensah",
+    company: "Family planner",
+    image:
+      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=1400&q=80",
+  },
+  {
+    quote:
+      "The weekly planning flow makes it easier to waste less food and still know what everyone in the house can eat during the week.",
+    author: "Leah Okoro",
+    company: "Meal prep user",
+    image:
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1400&q=80",
+  },
+];
+
+function IconGlyph({ name }: { name: string }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: "1.8",
   };
 
-  const staggerContainer = {
-    animate: {
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
+  switch (name) {
+    case "spark":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path {...common} d="M12 3v4" />
+          <path {...common} d="M12 17v4" />
+          <path {...common} d="M3 12h4" />
+          <path {...common} d="M17 12h4" />
+          <path {...common} d="m6.5 6.5 2.8 2.8" />
+          <path {...common} d="m14.7 14.7 2.8 2.8" />
+          <path {...common} d="m17.5 6.5-2.8 2.8" />
+          <path {...common} d="m9.3 14.7-2.8 2.8" />
+        </svg>
+      );
+    case "calendar":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect {...common} x="3.5" y="5.5" width="17" height="15" rx="3" />
+          <path {...common} d="M8 3.5v4" />
+          <path {...common} d="M16 3.5v4" />
+          <path {...common} d="M3.5 10.5h17" />
+          <path {...common} d="M8 14h3" />
+          <path {...common} d="M13 14h3" />
+          <path {...common} d="M8 17h3" />
+        </svg>
+      );
+    case "message":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path {...common} d="M6 18.5h8l4 2v-2a4.8 4.8 0 0 0 3-4.4V8.5a5 5 0 0 0-5-5H8a5 5 0 0 0-5 5v5a5 5 0 0 0 5 5Z" />
+          <path {...common} d="M8 9.5h8" />
+          <path {...common} d="M8 13h5" />
+        </svg>
+      );
+    case "fridge":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect {...common} x="6" y="3.5" width="12" height="17" rx="3" />
+          <path {...common} d="M6 11.5h12" />
+          <path {...common} d="M9 7.5h.01" />
+          <path {...common} d="M9 15.5h.01" />
+          <path {...common} d="M12 20.5v-2" />
+        </svg>
+      );
+    case "recipe":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path {...common} d="M7 4.5h10a3 3 0 0 1 3 3v11a1 1 0 0 1-1.6.8L16 17.5H7a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3Z" />
+          <path {...common} d="M8 9.5h8" />
+          <path {...common} d="M8 13h6" />
+        </svg>
+      );
+    case "users":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path {...common} d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+          <path {...common} d="M16.5 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+          <path {...common} d="M3.5 19a5 5 0 0 1 10 0" />
+          <path {...common} d="M13.5 19a4 4 0 0 1 7 0" />
+        </svg>
+      );
+    case "monitor":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect {...common} x="3.5" y="4.5" width="17" height="11" rx="2.5" />
+          <path {...common} d="M8.5 19.5h7" />
+          <path {...common} d="M12 15.5v4" />
+        </svg>
+      );
+    case "barcode":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path {...common} d="M5 5v14" />
+          <path {...common} d="M8 5v14" />
+          <path {...common} d="M11 5v14" />
+          <path {...common} d="M14 8v11" />
+          <path {...common} d="M17 5v14" />
+          <path {...common} d="M20 8v11" />
+        </svg>
+      );
+    case "receipt":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path {...common} d="M7 4.5h10v15l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3v-15Z" />
+          <path {...common} d="M9 9h6" />
+          <path {...common} d="M9 12.5h6" />
+          <path {...common} d="M9 16h4" />
+        </svg>
+      );
+    case "cart":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle {...common} cx="10" cy="19" r="1.5" />
+          <circle {...common} cx="17" cy="19" r="1.5" />
+          <path {...common} d="M3.5 5h2l2.2 8.5h9.8l2-6.5H7" />
+        </svg>
+      );
+    case "clock":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle {...common} cx="12" cy="12" r="8.5" />
+          <path {...common} d="M12 7.5v5l3 2" />
+        </svg>
+      );
+    case "image":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect {...common} x="4" y="5" width="16" height="14" rx="3" />
+          <path {...common} d="m8 15 2.5-2.5L14 16l2.5-2.5L20 17" />
+          <circle {...common} cx="9" cy="9" r="1.2" />
+        </svg>
+      );
+    case "book":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path {...common} d="M6 5.5h11a2 2 0 0 1 2 2v10H8a2 2 0 0 0-2 2Z" />
+          <path {...common} d="M6 5.5a2 2 0 0 0-2 2v11.5h11" />
+        </svg>
+      );
+    case "clipboard":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect {...common} x="6" y="4.5" width="12" height="16" rx="3" />
+          <path {...common} d="M9 4.5h6v3H9z" />
+          <path {...common} d="M9 11h6" />
+          <path {...common} d="M9 15h4" />
+        </svg>
+      );
+    case "download":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path {...common} d="M12 4.5v10" />
+          <path {...common} d="m8.5 11 3.5 3.5 3.5-3.5" />
+          <path {...common} d="M5 18.5h14" />
+        </svg>
+      );
+    default:
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle {...common} cx="12" cy="12" r="8.5" />
+          <path {...common} d="M12 8v4l2.5 2.5" />
+        </svg>
+      );
+  }
+}
+
+function PlaceholderIcon({ icon }: { icon: string }) {
+  return (
+    <div className="lp-placeholder-icon" aria-hidden="true">
+      <IconGlyph name={icon} />
+    </div>
+  );
+}
+
+function FadeIn({
+  children,
+  className = "",
+  delay = 0,
+  id,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  id?: string;
+}) {
+  return (
+    <motion.section
+      id={id}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.58, ease: "easeOut", delay }}
+      className={className}
+    >
+      {children}
+    </motion.section>
+  );
+}
+
+export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
+  const heroRef = useRef<HTMLElement | null>(null);
+  const rotatingWordRef = useRef<HTMLSpanElement | null>(null);
+  const [headlineIndex, setHeadlineIndex] = useState(0);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+
+  useEffect(() => {
+    const context = gsap.context(() => {
+      gsap
+        .timeline({ defaults: { ease: "power3.out" } })
+        .from("[data-topbar]", { opacity: 0, y: 18, duration: 0.45 })
+        .from("[data-hero-left]", { opacity: 0, y: 28, duration: 0.65 }, "-=0.1")
+        .from("[data-hero-right]", { opacity: 0, y: 22, scale: 0.985, duration: 0.7 }, "-=0.35");
+    }, heroRef);
+
+    return () => context.revert();
+  }, []);
+
+  useEffect(() => {
+    if (!rotatingWordRef.current) return undefined;
+
+    gsap.fromTo(
+      rotatingWordRef.current,
+      { opacity: 0, y: 18, filter: "blur(6px)" },
+      { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.4, ease: "power3.out" },
+    );
+
+    return undefined;
+  }, [headlineIndex]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (!rotatingWordRef.current) return;
+
+      gsap.to(rotatingWordRef.current, {
+        opacity: 0,
+        y: -18,
+        filter: "blur(6px)",
+        duration: 0.24,
+        ease: "power2.in",
+        onComplete: () => setHeadlineIndex((current) => (current + 1) % HEADLINE_WORDS.length),
+      });
+    }, 2600);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setActiveTestimonial((current) => (current + 1) % TESTIMONIALS.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const scrollToId = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col font-sans text-foreground">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl text-primary">
-            <ChefHat className="h-6 w-6" />
-            <span>PantryPal</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <a href="#features" className="hover:text-primary transition-colors">Features</a>
-            <a href="#how-it-works" className="hover:text-primary transition-colors">How It Works</a>
-            <a href="#community" className="hover:text-primary transition-colors">Community</a>
+    <div className="min-h-screen overflow-x-hidden bg-[#f8f7f2] text-[#10120f]">
+      <header ref={heroRef} className="fixed inset-x-0 top-0 z-40 w-full border-b border-[#e8eaec] bg-[#f8f7f2]">
+        <div data-topbar className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            onClick={() => scrollToId("top")}
+            className="flex items-center gap-3 text-sm font-semibold tracking-[0.04em] text-[#10120f]"
+          >
+            <span className="lp-brand-pill">PP</span>
+            Pantry Pal
+          </button>
+
+          <nav className="hidden items-center gap-8 text-sm font-medium text-[#666b62] lg:flex">
+            <button type="button" className="transition hover:text-[#10120f]" onClick={() => scrollToId("toolkit")}>
+              Toolkit
+            </button>
+            <button type="button" className="transition hover:text-[#10120f]" onClick={() => scrollToId("features")}>
+              Features
+            </button>
+            <button type="button" className="transition hover:text-[#10120f]" onClick={() => scrollToId("support")}>
+              Support
+            </button>
+            <button type="button" className="transition hover:text-[#10120f]" onClick={() => scrollToId("faq")}>
+              FAQ
+            </button>
           </nav>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onEnterApp}>Login</Button>
-            <Button onClick={onEnterApp}>Sign Up <ArrowRight className="ml-2 h-4 w-4" /></Button>
-          </div>
+
+          <button
+            type="button"
+            onClick={onSignUp}
+            className="inline-flex items-center justify-center rounded-full bg-[#10120f] px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:text-white"
+          >
+            Get Started
+          </button>
         </div>
       </header>
 
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="py-20 md:py-32 container mx-auto px-4 flex flex-col-reverse md:flex-row items-center gap-12">
-          <motion.div 
-            className="flex-1 space-y-6 text-center md:text-left"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary/10 text-primary hover:bg-primary/20">
-              Try it now
-            </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-primary">
-              Cook smarter with what you <span className="italic text-primary/80">already have</span>
+      <main id="top" className="flex w-full flex-col gap-24 pb-24 pt-28">
+        <section className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div data-hero-left className="max-w-xl">
+            <p className="lp-eyebrow">Smart kitchen tools for modern homes</p>
+            <h1 className="display-font mt-5 text-[clamp(3.15rem,7vw,6.1rem)] leading-[0.95] tracking-[-0.06em] text-[#10120f]">
+              Smart food tools
+              <br />
+              for your
+              <br />
+              <span ref={rotatingWordRef} className="lp-rotating-word text-[#00c755]">
+                {HEADLINE_WORDS[headlineIndex]}
+              </span>
+              .
             </h1>
-            <p className="text-xl text-muted-foreground max-w-lg mx-auto md:mx-0">
-              From snapping your grocery receipt to discovering recipes tailored to your pantry, PantryPal helps you reduce waste and enjoy cooking more.
+            <p className="mt-6 max-w-lg text-lg leading-8 text-[#5f645c]">
+              Pantry Pal keeps your pantry, recipes, grocery lists, and weekly meal plans in sync so cooking at home feels easier every day.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <Button size="lg" className="rounded-full text-lg h-12 px-8" onClick={onEnterApp}>
-                Get Started Now <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={onSignUp}
+                className="inline-flex items-center justify-center rounded-full bg-[#10120f] px-6 py-3.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:text-white sm:min-w-[210px]"
+              >
+                Join now
+              </button>
+              <button
+                type="button"
+                onClick={onLogin}
+                className="inline-flex items-center justify-center rounded-full border border-[#e8eaec] bg-white px-6 py-3.5 text-sm font-semibold text-[#32352f] transition hover:border-[#10120f] sm:min-w-[210px]"
+              >
+                Explore features
+              </button>
             </div>
-            <div className="flex items-center justify-center md:justify-start gap-1 text-sm text-muted-foreground">
-               <div className="flex text-amber-500">
-                 {'★★★★★'}
-               </div>
-               <span className="ml-2">5.0 from 120+ reviews</span>
+          </div>
+
+          <div data-hero-right className="rounded-[40px] border border-[#e4e8db] bg-white p-4">
+            <div className="overflow-hidden rounded-[32px] bg-[#10120f]">
+              <video
+                className="block aspect-[4/5] w-full object-cover"
+                autoPlay
+                controls
+                loop
+                muted
+                playsInline
+                preload="metadata"
+              >
+                <source src="https://www.pexels.com/download/video/5608629/" type="video/mp4" />
+              </video>
             </div>
-          </motion.div>
-          
-          <motion.div 
-            className="flex-1 relative"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-             <div className="relative aspect-square md:aspect-[4/3] rounded-3xl overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 border shadow-2xl flex items-center justify-center">
-                <ChefHat className="h-32 w-32 text-primary/20" />
-                <div className="absolute inset-x-8 bottom-8 p-4 bg-background/90 backdrop-blur rounded-xl shadow-lg border">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-700">
-                            <Sparkles size={20}/>
-                        </div>
-                        <div>
-                            <p className="font-bold text-sm">Recipe Match!</p>
-                            <p className="text-xs text-muted-foreground">Based on your 12 ingredients</p>
-                        </div>
+          </div>
+        </section>
+
+        <FadeIn id="toolkit" className="text-center">
+          <p className="lp-eyebrow justify-center">Everything in one place</p>
+          <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-[#10120f] sm:text-5xl">
+            A kitchen companion built for real weekly routines.
+          </h2>
+          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-[#5f645c]">
+            Pantry Pal helps households stay on top of ingredients, grocery trips, and dinner decisions without adding more friction to the week.
+          </p>
+
+          <div className="mt-10 grid gap-4 lg:grid-cols-3">
+            {TOOLKIT.map((item) => (
+              <motion.article
+                key={item.title}
+                whileHover={{ y: -8 }}
+                transition={{ duration: 0.22 }}
+                className="rounded-[30px] border border-[#e8eaec] bg-white p-7 text-left"
+              >
+                <PlaceholderIcon icon={item.icon} />
+                <h3 className="mt-6 text-2xl font-semibold tracking-[-0.04em] text-[#10120f]">{item.title}</h3>
+                <p className="mt-4 text-sm leading-7 text-[#5f645c]">{item.text}</p>
+              </motion.article>
+            ))}
+          </div>
+        </FadeIn>
+
+        <section id="features" className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">
+          <FadeIn className="rounded-[36px] border border-[#e8eaec] bg-white p-8">
+            <p className="lp-eyebrow">Built for everyday cooking</p>
+            <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-[#10120f] sm:text-5xl">
+              The tools you need to shop smarter and cook with what you have.
+            </h2>
+
+            <div className="mt-8 space-y-4">
+              {FEATURES.map((item) => (
+                <div key={item.title} className="rounded-[24px] bg-[#dce9dd] p-5">
+                  <div className="flex items-start gap-4">
+                    <PlaceholderIcon icon={item.icon} />
+                    <div>
+                      <h3 className="text-xl font-semibold tracking-[-0.04em] text-[#10120f]">{item.title}</h3>
+                      <p className="mt-3 text-sm leading-6 text-[#5f645c]">{item.text}</p>
                     </div>
+                  </div>
                 </div>
-             </div>
-          </motion.div>
-        </section>
-
-        {/* How It Works Section */}
-        <section id="how-it-works" className="py-20 bg-muted/30">
-          <div className="container mx-auto px-4 text-center space-y-12">
-             <div className="space-y-4">
-               <h2 className="text-primary font-semibold tracking-wide uppercase text-sm">How It Works</h2>
-               <h3 className="text-3xl md:text-4xl font-bold">From groceries to great meals in 3 steps</h3>
-             </div>
-
-             <motion.div 
-               className="grid md:grid-cols-3 gap-8 relative"
-               variants={staggerContainer}
-               initial="initial"
-               whileInView="animate"
-               viewport={{ once: true }}
-             >
-                {/* Connecting Line (Desktop) */}
-                <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-border -z-10" />
-
-                {[
-                  { 
-                    icon: <ScanLine className="h-8 w-8 text-primary" />, 
-                    step: 1, 
-                    title: 'Snap or Enter Groceries', 
-                    desc: 'Upload a receipt photo or manually add items to your digital pantry in seconds.' 
-                  },
-                  { 
-                    icon: <ChefHat className="h-8 w-8 text-primary" />, 
-                    step: 2, 
-                    title: 'Get Recipe Suggestions', 
-                    desc: 'Discover recipes tailored to what you already have, filtered by your preferences.' 
-                  },
-                  { 
-                    icon: <Users className="h-8 w-8 text-primary" />, 
-                    step: 3, 
-                    title: 'Cook & Share', 
-                    desc: 'Prepare delicious meals and share your creations, tips, and stories with the community.' 
-                  }
-                ].map((item, idx) => (
-                  <motion.div key={idx} variants={fadeInUp} className="flex flex-col items-center space-y-4 bg-background/50 p-6 rounded-2xl md:bg-transparent md:p-0">
-                    <div className="relative">
-                      <div className="h-24 w-24 rounded-3xl bg-primary/10 flex items-center justify-center mb-4">
-                        {item.icon}
-                      </div>
-                      <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm border-4 border-background">
-                        {item.step}
-                      </div>
-                    </div>
-                    <h4 className="text-xl font-bold">{item.title}</h4>
-                    <p className="text-muted-foreground max-w-xs">{item.desc}</p>
-                  </motion.div>
-                ))}
-             </motion.div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section id="features" className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16 space-y-4">
-               <h2 className="text-primary font-semibold tracking-wide uppercase text-sm">Features</h2>
-               <h3 className="text-3xl md:text-4xl font-bold">Everything you need to cook smarter</h3>
+              ))}
             </div>
+          </FadeIn>
 
-            <div className="grid md:grid-cols-2 gap-6">
-               {[
-                 {
-                   icon: <ScanLine className="h-6 w-6 text-primary" />,
-                   title: "Receipt Scanning",
-                   desc: "Snap a photo of your grocery receipt and watch your pantry populate automatically."
-                 },
-                 {
-                   icon: <Utensils className="h-6 w-6 text-primary" />,
-                   title: "Smart Recipe Matching",
-                   desc: "Get personalized recipe ideas based on what's in your pantry and your dietary needs."
-                 },
-                 {
-                   icon: <Leaf className="h-6 w-6 text-primary" />,
-                   title: "Digital Pantry",
-                   desc: "Track your ingredients, quantities, and expiry dates in one organized place."
-                 },
-                 {
-                   icon: <Users className="h-6 w-6 text-primary" />,
-                   title: "Community Feed",
-                   desc: "Share dishes, swap tips, celebrate food traditions, and join cooking challenges."
-                 }
-               ].map((feature, idx) => (
-                 <motion.div 
-                    key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    viewport={{ once: true }}
-                 >
-                   <Card className="h-full border-none shadow-sm hover:shadow-md transition-shadow bg-muted/20">
-                     <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                       <div className="h-12 w-12 rounded-xl bg-background flex items-center justify-center shadow-sm shrink-0">
-                         {feature.icon}
-                       </div>
-                       <div className="space-y-1">
-                         <CardTitle className="text-xl">{feature.title}</CardTitle>
-                         <CardDescription className="text-base leading-relaxed">{feature.desc}</CardDescription>
-                       </div>
-                     </CardHeader>
-                   </Card>
-                 </motion.div>
-               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="bg-primary text-primary-foreground py-12">
-           <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="flex items-center gap-2 font-bold text-xl">
-                <ChefHat className="h-6 w-6" />
-                <span>PantryPal</span>
+          <FadeIn delay={0.08} className="rounded-[36px] bg-[#10120f] p-5 text-white">
+            <div className="flex h-full min-h-[560px] flex-col rounded-[30px] border border-white/10 bg-white/4 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold tracking-[0.04em] text-white/45">Pantry Pal dashboard</p>
+                  <h3 className="mt-3 max-w-xl text-3xl font-semibold tracking-[-0.05em]">
+                    See your pantry, recipes, and plan for the week from one clear home base.
+                  </h3>
+                </div>
+                <PlaceholderIcon icon="monitor" />
               </div>
-              <p className="text-primary-foreground/80 text-sm">
-                © 2026 PantryPal. All rights reserved.
-              </p>
-           </div>
-        </footer>
+
+              <div className="mt-8 grid flex-1 gap-4 md:grid-cols-2">
+                <div className="rounded-[28px] border border-white/14 bg-white/3 px-5 py-16 text-center text-sm text-white/55">
+                  Pantry overview
+                </div>
+                <div className="rounded-[28px] border border-white/14 bg-white/3 px-5 py-16 text-center text-sm text-white/55">
+                  Weekly meal plan
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+        </section>
+
+        <FadeIn className="lp-testimonial-spotlight overflow-hidden rounded-[36px] bg-[#10120f]">
+          <div className="grid min-h-[380px] lg:grid-cols-[1.35fr_0.65fr]">
+            <div className="flex flex-col justify-center px-8 py-8 text-white sm:px-12 sm:py-10 lg:px-16">
+              <div className="mx-auto grid w-full max-w-[640px] flex-1 grid-rows-[1fr_auto_auto] items-center text-center">
+                <motion.div
+                  key={`quote-${activeTestimonial}`}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: "easeOut" }}
+                  className="flex min-h-[165px] items-center justify-center sm:min-h-[190px]"
+                >
+                  <p className="text-[clamp(1.35rem,2.6vw,2.2rem)] font-medium leading-[1.4] tracking-[-0.04em] text-white">
+                    “{TESTIMONIALS[activeTestimonial].quote}”
+                  </p>
+                </motion.div>
+
+                <motion.div
+                  key={`meta-${activeTestimonial}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.08 }}
+                  className="mt-8 min-h-[28px]"
+                >
+                  <p className="whitespace-nowrap text-[clamp(0.92rem,1.05vw,1.08rem)] font-medium text-[#747b87]">
+                    {TESTIMONIALS[activeTestimonial].author}, {TESTIMONIALS[activeTestimonial].company}
+                  </p>
+                </motion.div>
+
+                <div className="mt-7 flex h-3 items-center justify-center gap-3">
+                  {TESTIMONIALS.map((item, index) => (
+                    <button
+                      key={item.author}
+                      aria-label={`Show testimonial ${index + 1}`}
+                      className={`lp-testimonial-dot ${index === activeTestimonial ? "is-active" : ""}`}
+                      onClick={() => setActiveTestimonial(index)}
+                      type="button"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <motion.div
+              key={`image-${activeTestimonial}`}
+              initial={{ opacity: 0.9, scale: 1.02 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.55, ease: "easeOut" }}
+              className="relative min-h-[280px] lg:min-h-full"
+            >
+              <img
+                alt={TESTIMONIALS[activeTestimonial].author}
+                className="block h-full w-full object-cover"
+                src={TESTIMONIALS[activeTestimonial].image}
+              />
+            </motion.div>
+          </div>
+        </FadeIn>
+
+        <FadeIn className="text-center">
+          <p className="lp-eyebrow justify-center">Integrations that matter</p>
+          <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-[#10120f] sm:text-5xl">
+            Helpful connections for the way people already shop.
+          </h2>
+          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-[#5f645c]">
+            Bring purchases, reminders, and shared lists together so your pantry stays current without constant manual updates.
+          </p>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {INTEGRATIONS.map((item) => (
+              <div key={item.title} className="min-h-[250px] rounded-[30px] border border-[#e8eaec] bg-white p-6 text-left">
+                <PlaceholderIcon icon={item.icon} />
+                <h3 className="mt-5 text-2xl font-semibold tracking-[-0.04em] text-[#10120f]">{item.title}</h3>
+                <p className="mt-4 text-sm leading-7 text-[#5f645c]">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+
+        <section id="support" className="grid gap-6 lg:grid-cols-[1fr_0.92fr]">
+          <FadeIn className="rounded-[36px] bg-[#10120f] p-6 text-white">
+            <p className="lp-eyebrow text-[#d7dbd1]">Support when you need it</p>
+            <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-white sm:text-5xl">
+              Guidance that makes daily cooking easier.
+            </h2>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-white/72">
+              Pantry Pal is designed to feel useful from day one, with simple setup, shared-household tools, and recipe guidance that stays practical.
+            </p>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+                <p className="text-xs font-semibold tracking-[0.04em] text-white/45">Easy onboarding</p>
+                <p className="mt-3 text-base leading-7 text-white/72">
+                  Get started with pantry setup, category organization, and list sharing without a steep learning curve.
+                </p>
+              </div>
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+                <p className="text-xs font-semibold tracking-[0.04em] text-white/45">Smarter suggestions</p>
+                <p className="mt-3 text-base leading-7 text-white/72">
+                  Get recipe ideas and planning prompts that reflect what your household can actually cook this week.
+                </p>
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.08} className="rounded-[36px] border border-[#e8eaec] bg-white p-5">
+            <div className="flex h-full min-h-[430px] flex-col justify-between rounded-[30px] bg-[#dce9dd] p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold tracking-[0.04em] text-[#7d8277]">Household-friendly design</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#10120f]">
+                    Pantry Pal keeps shared kitchens more organized with simple views everyone can understand.
+                  </p>
+                </div>
+                <PlaceholderIcon icon="image" />
+              </div>
+
+              <div className="mt-8 rounded-[28px] border border-[#e8eaec] bg-white px-5 py-20 text-center text-sm text-[#777d73]">
+                Family dashboard or onboarding preview
+              </div>
+            </div>
+          </FadeIn>
+        </section>
+
+        <section id="resources" className="grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
+          <FadeIn className="rounded-[36px] border border-[#e8eaec] bg-white p-8">
+            <p className="lp-eyebrow">Tips to help you start strong</p>
+            <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-[#10120f] sm:text-5xl">
+              Useful resources for better pantry habits.
+            </h2>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-[#5f645c]">
+              Explore quick guides and planning ideas that help households cook more intentionally and waste less over time.
+            </p>
+
+            <div className="mt-8 grid gap-4">
+              {RESOURCES.map((item) => (
+                <motion.article
+                  key={item.title}
+                  whileHover={{ x: 6 }}
+                  transition={{ duration: 0.2 }}
+                  className="rounded-[26px] bg-[#dce9dd] p-6"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <h3 className="text-2xl font-semibold tracking-[-0.04em] text-[#10120f]">{item.title}</h3>
+                    <PlaceholderIcon icon={item.icon} />
+                  </div>
+                  <p className="mt-4 text-sm leading-7 text-[#5f645c]">{item.text}</p>
+                </motion.article>
+              ))}
+            </div>
+          </FadeIn>
+
+          <FadeIn id="faq" delay={0.08} className="rounded-[36px] bg-[#10120f] p-8 text-white">
+            <p className="lp-eyebrow text-[#d7dbd1]">Common questions</p>
+            <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-white sm:text-5xl">
+              Answers for people getting started.
+            </h2>
+
+            <div className="mt-8 space-y-3">
+              {FAQS.map((item) => (
+                <details key={item.question} className="lp-faq-item">
+                  <summary>{item.question}</summary>
+                  <p>{item.answer}</p>
+                </details>
+              ))}
+            </div>
+          </FadeIn>
+        </section>
+
+        <FadeIn id="cta" className="rounded-[40px] bg-[#10120f] px-6 py-14 text-center text-white sm:px-10">
+          <p className="lp-eyebrow justify-center text-[#d7dbd1]">Get started with ease</p>
+          <h2 className="display-font mx-auto mt-4 max-w-4xl text-4xl tracking-[-0.06em] text-white sm:text-5xl lg:text-6xl">
+            Bring more calm to your kitchen with Pantry Pal.
+          </h2>
+          <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-white/72">
+            Keep ingredients visible, make meal planning simpler, and give your household one place to stay organized through the week.
+          </p>
+
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={onSignUp}
+              className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-[#10120f] transition hover:-translate-y-0.5"
+            >
+              Join the waitlist
+            </button>
+            <button
+              type="button"
+              onClick={onLogin}
+              className="inline-flex items-center justify-center rounded-full border border-white/14 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition hover:border-white/30 hover:text-white"
+            >
+              Explore features
+            </button>
+          </div>
+        </FadeIn>
       </main>
     </div>
   );

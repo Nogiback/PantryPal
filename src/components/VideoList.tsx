@@ -16,7 +16,7 @@ export function VideoList({ videos, onVideoClick }: VideoListProps) {
         {videos.map((video) => (
           <Card
             key={video.youTubeId}
-            className="overflow-hidden group cursor-pointer hover:shadow-md transition-all flex flex-col h-full"
+            className="overflow-hidden group cursor-pointer transition-all flex flex-col h-full"
             onClick={() => onVideoClick(video)}
           >
             <div className="relative aspect-video overflow-hidden">

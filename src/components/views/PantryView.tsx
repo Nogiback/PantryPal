@@ -1,123 +1,375 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Trash2 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { MoreHorizontal, Plus, ScanLine, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
-  addIngredient,
-  removeIngredient,
-} from "@/store/slices/ingredientsSlice";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { categorizeIngredient, removeIngredient, savePantry } from "@/store/slices/ingredientsSlice";
+import { AddPantryItemModal } from "@/components/AddPantryItemModal";
+import type { Ingredient } from "@/types";
 
-export function PantryView() {
-  const [inputValue, setInputValue] = useState("");
+interface PantryViewProps {
+  onGoToScan?: () => void;
+}
+
+const CATEGORY_CARDS = [
+  { label: "Produce", category: "Produce" },
+  { label: "Condiments", category: "Condiments & Oils" },
+  { label: "Dairy", category: "Dairy & Eggs" },
+  { label: "Meat", category: "Meat & Poultry" },
+  { label: "Herbs", category: "Spices & Herbs" },
+  { label: "Seafood", category: "Seafood" },
+  { label: "Other", category: "Other" },
+] as const;
+
+const ITEM_LIMIT = 6;
+const PANTRY_TABLE_GRID = "grid-cols-[124px_minmax(0,1.3fr)_minmax(120px,0.8fr)_minmax(280px,1.2fr)_32px]";
+
+const CATEGORY_LIFESPAN_DAYS: Record<string, number> = {
+  "Produce": 14,
+  "Condiments & Oils": 180,
+  "Dairy & Eggs": 14,
+  "Meat & Poultry": 4,
+  "Spices & Herbs": 365,
+  "Seafood": 3,
+};
+
+const getDaysUntilExpiry = (expiryDate?: string) => {
+  if (!expiryDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(expiryDate);
+  expiry.setHours(0, 0, 0, 0);
+  return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+const getExpiryLabel = (expiryDate?: string) => {
+  const daysLeft = getDaysUntilExpiry(expiryDate);
+  if (daysLeft === null) return "No date";
+  if (daysLeft < 0) return "Expired";
+  if (daysLeft === 0) return "Today";
+  if (daysLeft === 1) return "in 1 day";
+  return `in ${daysLeft} days`;
+};
+
+const getExpiryProgress = (item: Ingredient) => {
+  const daysLeft = getDaysUntilExpiry(item.expiryDate);
+  if (daysLeft === null) return 6;
+  if (daysLeft <= 0) return 100;
+
+  const defaultWindow = CATEGORY_LIFESPAN_DAYS[getItemCategory(item)] ?? 30;
+  const freshnessRatio = Math.max(0, Math.min(1, daysLeft / defaultWindow));
+  return Math.max(8, Math.round((1 - freshnessRatio) * 100));
+};
+
+const getProgressColor = (item: Ingredient) => {
+  const daysLeft = getDaysUntilExpiry(item.expiryDate);
+  if (daysLeft === null) return "#d9b1bc";
+  if (daysLeft <= 2) return "#d95c69";
+  if (daysLeft <= 7) return "#df8fa3";
+  return "#d7dfd6";
+};
+
+const getQuantityLabel = (item: Ingredient) => {
+  const parts = [item.quantity, item.unit].filter(Boolean);
+  return parts.length > 0 ? parts.join(" ") : "1 item";
+};
+
+const getItemCategory = (item: Ingredient) => {
+  if (item.category && item.category !== "Other") return item.category;
+  return categorizeIngredient(item.name);
+};
+
+export function PantryView({ onGoToScan }: PantryViewProps) {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Ingredient | null>(null);
+
   const ingredients = useAppSelector((state) => state.ingredients.items);
+  const saveStatus = useAppSelector((state) => state.ingredients.saveStatus);
+  const saveError = useAppSelector((state) => state.ingredients.saveError);
   const dispatch = useAppDispatch();
 
-  const handleAdd = () => {
-    if (inputValue.trim()) {
-      dispatch(addIngredient({ name: inputValue }));
-      setInputValue("");
+  const ingredientSignature = useMemo(
+    () =>
+      ingredients
+        .map((item) => `${item.id}:${item.name}:${item.quantity ?? ""}:${item.expiryDate ?? ""}`)
+        .join("|"),
+    [ingredients],
+  );
+
+  const lastSavedSignatureRef = useRef<string>("");
+  const queuedSignatureRef = useRef<string>("");
+  const debounceTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+    if (!ingredientSignature) return;
+    if (ingredientSignature === lastSavedSignatureRef.current) return;
+
+    if (debounceTimerRef.current) window.clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = window.setTimeout(() => {
+      if (saveStatus === "loading") {
+        queuedSignatureRef.current = ingredientSignature;
+        return;
+      }
+      lastSavedSignatureRef.current = ingredientSignature;
+      dispatch(savePantry());
+    }, 450);
+
+    return () => {
+      if (debounceTimerRef.current) window.clearTimeout(debounceTimerRef.current);
+    };
+  }, [dispatch, ingredientSignature, saveStatus]);
+
+  useEffect(() => {
+    if (saveStatus === "loading") return;
+    const queued = queuedSignatureRef.current;
+    if (!queued) return;
+    if (queued === lastSavedSignatureRef.current) {
+      queuedSignatureRef.current = "";
+      return;
     }
+    lastSavedSignatureRef.current = queued;
+    queuedSignatureRef.current = "";
+    dispatch(savePantry());
+  }, [dispatch, saveStatus]);
+
+  const categorySections = useMemo(
+    () =>
+      CATEGORY_CARDS.map((section) => ({
+        ...section,
+        items: ingredients.filter((item) => getItemCategory(item) === section.category).slice(0, ITEM_LIMIT),
+        totalCount: ingredients.filter((item) => getItemCategory(item) === section.category).length,
+      })),
+    [ingredients],
+  );
+
+  const handleDelete = () => {
+    if (!selectedItem) return;
+    dispatch(removeIngredient(selectedItem.id));
+    setSelectedItem(null);
   };
 
-  const handleRemove = (id: string) => {
-    dispatch(removeIngredient(id));
+  const handleOpenAddIngredient = () => {
+    setIsActionMenuOpen(false);
+    setIsAddModalOpen(true);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleAdd();
-    }
+  const handleOpenScan = () => {
+    setIsActionMenuOpen(false);
+    onGoToScan?.();
   };
 
   return (
-    <motion.div
-      className="space-y-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">My Pantry</h2>
-        <p className="text-muted-foreground">
-          Manage your available ingredients here.
-        </p>
-      </div>
+    <>
+      <motion.div
+        className="space-y-5"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+      >
+        <div>
+          <h2 className="page-title text-[#10120f]">Pantry items</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#737a72]">
+            Track what is in every shelf and drawer.
+            {saveStatus === "loading" ? " Saving your pantry changes..." : ""}
+          </p>
+        </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Add Ingredients</CardTitle>
-            <CardDescription>
-              Manually add items to your pantry.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex space-x-2">
-              <Input
-                placeholder="e.g. Tomato, Pasta, Basil"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-              />
-              <Button onClick={handleAdd}>
+        {saveError && (
+          <div className="rounded-[22px] border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {saveError}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-5">
+          {categorySections.map((section) => (
+            <section
+              key={section.category}
+              className="overflow-hidden rounded-[22px] border border-[#e8eaec] bg-[#fcfcfc]"
+            >
+              <div className="border-b border-[#e8eaec] px-8 py-7 sm:px-9">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-[1.08rem] font-semibold tracking-[-0.04em] text-[#10120f]">{section.label}</h3>
+                    <p className="mt-2 text-[0.92rem] text-[#8a9188]">
+                      {section.totalCount === 0
+                        ? "No items added yet."
+                        : `${section.totalCount} ${section.totalCount === 1 ? "item" : "items"} in this category`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className={`mt-8 grid ${PANTRY_TABLE_GRID} items-center gap-4 text-[0.78rem] font-medium tracking-[0.04em] text-[#9ea69d]`}>
+                  <span className="justify-self-start">Number</span>
+                  <span className="justify-self-start">Items</span>
+                  <span className="justify-self-start">Quantity</span>
+                  <span className="justify-self-start">Expires</span>
+                  <span className="justify-self-center"> </span>
+                </div>
+              </div>
+
+              <div className="divide-y divide-[#e8eaec]">
+                {section.items.length > 0 ? (
+                  section.items.map((item, index) => {
+                    const progress = getExpiryProgress(item);
+                    const progressColor = getProgressColor(item);
+                    return (
+                      <div
+                        key={item.id}
+                        className={`grid ${PANTRY_TABLE_GRID} items-center gap-4 px-8 py-4 sm:px-9`}
+                      >
+                        <span className="justify-self-start text-[0.9rem] font-medium text-[#8d958b]">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+
+                        <div className="flex min-w-0 items-center gap-4 pl-2">
+                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#ff616d] text-[1rem] font-semibold text-white">
+                            {item.name.trim().charAt(0).toUpperCase() || "P"}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-[0.92rem] font-normal text-[#1b1d1b]">{item.name}</p>
+                            {item.notes ? <p className="truncate text-[0.82rem] text-[#97a096]">{item.notes}</p> : null}
+                          </div>
+                        </div>
+
+                        <p className="justify-self-start text-[0.92rem] font-normal text-[#353934]">{getQuantityLabel(item)}</p>
+
+                        <div className="flex min-w-0 items-center gap-3 justify-self-start">
+                          <div className="h-[5px] w-full min-w-[140px] max-w-[180px] overflow-hidden rounded-full bg-[#e8eaec]">
+                            <div
+                              className="h-full rounded-full transition-all duration-300"
+                              style={{ width: `${progress}%`, backgroundColor: progressColor }}
+                            />
+                          </div>
+                          <span className="min-w-[84px] text-left text-[0.92rem] font-normal text-[#555c54]">
+                            {getExpiryLabel(item.expiryDate)}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="grid h-8 w-8 justify-self-center place-items-center rounded-full text-[#b7bcb5] transition hover:bg-[#f4f7f0] hover:text-[#10120f]"
+                          onClick={() => setSelectedItem(item)}
+                          aria-label={`Open actions for ${item.name}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })
+                ) : null}
+              </div>
+ 
+              {section.totalCount > ITEM_LIMIT ? (
+                <div className="border-t border-[#e8eaec] px-8 py-4 text-sm text-[#97a096] sm:px-9">
+                  Showing the first {ITEM_LIMIT} items. Add filters or remove items to see more clearly.
+                </div>
+              ) : null}
+            </section>
+          ))}
+        </div>
+      </motion.div>
+
+      <AddPantryItemModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+
+      <button
+        type="button"
+        className={`fixed bottom-11 right-7 z-[60] grid h-14 w-14 place-items-center rounded-full bg-[#00c755] text-white shadow-[0_10px_24px_-14px_rgba(16,18,15,0.28)] transition hover:bg-[#00c755] ${isActionMenuOpen ? "pointer-events-none" : ""}`}
+        onClick={() => setIsActionMenuOpen(true)}
+        aria-label="Open pantry actions"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
+
+      <Dialog open={isActionMenuOpen} onOpenChange={setIsActionMenuOpen}>
+        <DialogContent className="max-w-[380px] rounded-[18px] border-[#e8eaec] bg-white p-0">
+          <div className="px-6 pb-6 pt-8">
+            <DialogHeader className="text-left">
+              <DialogTitle className="text-[1.22rem] font-semibold tracking-[-0.04em] text-[#10120f]">
+                Pantry actions
+              </DialogTitle>
+              <DialogDescription className="mt-2 text-sm leading-6 text-[#747b73]">
+                Choose how you want to update your pantry.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-6 grid gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="justify-start border-[#e8eaec] bg-white text-[#10120f] hover:bg-[#dce9dd]"
+                onClick={handleOpenScan}
+              >
+                <ScanLine className="h-4 w-4" />
+                Scan items
+              </Button>
+              <Button
+                type="button"
+                className="justify-start bg-[#00c755] text-white hover:bg-[#00c755] hover:text-white"
+                onClick={handleOpenAddIngredient}
+              >
                 <Plus className="h-4 w-4" />
-                Add
+                Add ingredient
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-        <Card className="md:row-span-2">
-          <CardHeader>
-            <CardTitle>Current Ingredients</CardTitle>
-            <CardDescription>
-              You have {ingredients.length} items.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-100 w-full pr-4">
-              {ingredients.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  No ingredients added yet.
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {ingredients.map((ingredient) => (
-                    <Badge
-                      key={ingredient.id}
-                      variant="secondary"
-                      className="text-sm py-1 pl-3 pr-1 flex items-center gap-1"
-                    >
-                      {ingredient.quantity
-                        ? `${ingredient.name} (${ingredient.quantity})`
-                        : ingredient.name}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => handleRemove(ingredient.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-    </motion.div>
+      <Dialog open={selectedItem !== null} onOpenChange={(open) => (!open ? setSelectedItem(null) : null)}>
+        <DialogContent className="max-w-[420px] rounded-[18px] border-[#e8eaec] bg-white p-0">
+          <div className="px-6 pb-6 pt-8">
+            <DialogHeader className="text-left">
+              <DialogTitle className="text-[1.4rem] font-semibold tracking-[-0.04em] text-[#10120f]">
+                Pantry item actions
+              </DialogTitle>
+              <DialogDescription className="mt-2 text-sm leading-6 text-[#747b73]">
+                {selectedItem
+                  ? `Choose what you want to do with ${selectedItem.name}.`
+                  : "Choose what you want to do with this pantry item."}
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedItem ? (
+              <div className="mt-5 rounded-[12px] border border-[#e8eaec] bg-white px-4 py-4">
+                <p className="text-sm font-semibold text-[#181a18]">{selectedItem.name}</p>
+                <p className="mt-1 text-sm text-[#7d857c]">
+                  {getQuantityLabel(selectedItem)} • {getExpiryLabel(selectedItem.expiryDate)}
+                </p>
+              </div>
+            ) : null}
+
+            <DialogFooter className="mt-6 flex-row justify-between gap-3 sm:space-x-0">
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#e8eaec] bg-white text-[#10120f] hover:bg-[#dce9dd]"
+                onClick={() => setSelectedItem(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="bg-[#10120f] text-white hover:bg-[#10120f] hover:text-white"
+                onClick={handleDelete}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete item
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

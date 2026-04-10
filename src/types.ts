@@ -2,6 +2,11 @@ export interface Ingredient {
   id: string;
   name: string;
   quantity?: string;
+  unit?: string;
+  expiryDate?: string;
+  notes?: string;
+  category?: string;
+  inFreezer?: boolean;
 }
 
 export interface Recipe {
@@ -15,6 +20,30 @@ export interface Recipe {
   usedIngredients: IngredientInfo[];
   unusedIngredients: IngredientInfo[];
   likes: number;
+}
+
+export interface AppliedRecipeFilters {
+  endpoint?: string;
+  originalIngredients?: string[];
+  includeIngredients?: string[];
+  filteredOutIngredients?: string[];
+  retriedWithoutIncludeIngredients?: boolean;
+  retriedWithReducedIncludeIngredients?: boolean;
+  filteredOutRecipesCount?: number;
+  totalResults?: number | null;
+  number?: number;
+  ignorePantry?: boolean;
+  ranking?: number;
+  addRecipeInformation?: boolean;
+  fillIngredients?: boolean;
+  diet: string | null;
+  intolerances: string[];
+  excludeIngredients: string[];
+  tuning: {
+    sort?: string;
+    maxReadyTime?: number;
+    [key: string]: unknown;
+  };
 }
 
 export interface IngredientInfo {
@@ -31,14 +60,31 @@ export interface IngredientInfo {
   image: string;
 }
 
+export interface AiRecipeIngredient {
+  name: string;
+  quantity: string;
+  fromPantry: boolean;
+}
+
+export interface AiRecipe {
+  title: string;
+  servings: string;
+  estimatedTime: string;
+  ingredients: AiRecipeIngredient[];
+  instructions: string[];
+  finalDish: string;
+  imageUrl?: string;
+  imageQuery?: string;
+}
+
 export interface Video {
   title: string;
+  shortTitle: string;
   youTubeId: string;
   rating: number;
   views: number;
   thumbnail: string;
   length: number;
-  shortTitle: string;
 }
 
 export interface AnalyzedInstruction {
@@ -77,5 +123,11 @@ export interface RecipeDetails extends Recipe {
   cheap: boolean;
 }
 
-
-
+export interface MealPlanRecipe {
+  id: string;
+  sourceType: 'api' | 'ai';
+  title: string;
+  image?: string;
+  requiredIngredients: { name: string; quantity: string }[];
+  originalRecipe: Recipe | AiRecipe;
+}
