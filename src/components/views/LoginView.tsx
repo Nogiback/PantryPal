@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cacheLocalAuthUser, createLocalSession, getStoredPublicUser, loginLocalUser, setAuthMode } from "@/lib/localAuth";
 
@@ -13,6 +13,7 @@ interface LoginViewProps {
 export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -109,10 +110,12 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
             className="flex items-center gap-3 text-sm font-semibold tracking-[0.04em] text-[#10120f]"
             onClick={onBack}
           >
-            <span className="brand-pill">PP</span>
+            <span className="brand-pill">
+              <Heart className="h-4 w-4" />
+            </span>
             Pantry Pal
           </button>
-          <button type="button" className="text-sm font-semibold text-primary" onClick={onGoToSignup}>
+          <button type="button" className="text-sm font-semibold text-[#10120f]" onClick={onGoToSignup}>
             Create account
           </button>
         </div>
@@ -130,8 +133,8 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
               <h1 className="page-title text-[#10120f]">
                 Welcome back
               </h1>
-              <p className="mt-4 text-[0.96rem] leading-7 text-[#6d726a]">
-                Log in to access the improved Pantry Pal AI workspace and continue where you left off.
+              <p className="mt-4 text-[0.96rem] text-[rgba(16,18,15,0.62)]">
+                Log in to access your Pantry Pal workspace and continue where you left off.
               </p>
             </div>
 
@@ -139,6 +142,7 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
               <label className="auth-label">
                 Email address
                 <Input
+                  className="auth-input"
                   type="email"
                   placeholder="Your email address"
                   value={email}
@@ -150,13 +154,15 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
                 Password
                 <div className="relative">
                   <Input
-                    className="pr-16"
-                    type="password"
+                    className="auth-input pr-16"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                  <button className="auth-inline-action" type="button">Show</button>
+                  <button className="auth-inline-action" type="button" onClick={() => setShowPassword((current) => !current)}>
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
                 </div>
               </label>
 
@@ -165,7 +171,7 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
                   <input type="checkbox" />
                   <span>Keep me signed in</span>
                 </label>
-                <button type="button" className="font-semibold text-primary">Forgot password?</button>
+                <button type="button" className="font-semibold text-[#10120f]">Forgot password?</button>
               </div>
 
               {error && (
@@ -174,29 +180,29 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
                 </div>
               )}
 
-              <button className="auth-submit" disabled={isSubmitting} type="submit">
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Log in"}
+              <button className="auth-submit auth-submit--primary" disabled={isSubmitting} type="submit">
+                {isSubmitting ? "Logging in..." : "Log in"}
               </button>
             </form>
 
             <div className="auth-support-card">
-              <p className="text-[0.96rem] font-semibold text-[#2c2e2a]">Having trouble logging in?</p>
+              <p className="text-[0.96rem] font-semibold text-[#10120f]">Having trouble logging in?</p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                <button type="button" className="font-semibold text-primary">Chat with support</button>
-                <span className="text-[#cfd4cc]">|</span>
-                <button type="button" className="text-[#b3b9b1]">Run npm run dev:user</button>
+                <button type="button" className="font-semibold text-[#10120f]">Chat with support</button>
+                <span className="text-[#e8eaec]">|</span>
+                <button type="button" className="text-[rgba(16,18,15,0.48)]">Run npm run dev:user</button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 text-sm text-[#667067]">
+            <div className="flex items-center justify-between gap-3 text-sm text-[rgba(16,18,15,0.62)]">
               <span>New to Pantry Pal?</span>
-              <button type="button" className="font-semibold text-primary" onClick={onGoToSignup}>
+              <button type="button" className="font-semibold text-[#10120f]" onClick={onGoToSignup}>
                 Create an account
               </button>
             </div>
 
             <div className="pt-3 text-center">
-              <button type="button" className="text-sm font-medium text-primary underline underline-offset-4">
+              <button type="button" className="text-sm font-medium text-[#10120f] underline underline-offset-4">
                 See why home cooks choose Pantry Pal
               </button>
             </div>

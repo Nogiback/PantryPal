@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { ChefHat, Loader2, RefreshCw, Search, CalendarPlus, CalendarMinus, Heart } from "lucide-react";
+import { ChefHat, Heart } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearSelectedRecipe, fetchRecipes, fetchRecipeDetails } from "@/store/slices/recipesSlice";
 import { addRecipeToPlan, removeRecipeFromPlan } from "@/store/slices/mealPlannerSlice";
@@ -190,35 +190,27 @@ export function RecipesView() {
             )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:w-[260px]">
           <Button
             variant="outline"
             onClick={handleSearch}
             disabled={ingredients.length === 0 || status === "loading"}
+            className="h-10 w-full border-[#e8eaec] bg-white text-[#10120f] hover:bg-[#dce9dd] hover:text-[#10120f]"
           >
-            {status === "loading" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Refresh
+            {status === "loading" ? "Refreshing..." : "Refresh"}
           </Button>
           <Button
             onClick={handleSearch}
             disabled={ingredients.length === 0 || status === "loading"}
+            className="w-full"
           >
-            {status === "loading" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Search className="h-4 w-4" />
-            )}
-            Find
+            {status === "loading" ? "Searching..." : "Find"}
           </Button>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 text-red-500 bg-red-50 rounded-md">
+        <div className="rounded-md border border-destructive/25 bg-destructive/5 p-4 text-destructive">
           Error: {error}
         </div>
       )}
@@ -270,9 +262,9 @@ export function RecipesView() {
 	                      <button
 	                        type="button"
 	                        className={[
-	                          "absolute right-3 top-3 z-10 rounded-full p-2 backdrop-blur transition",
-	                          "bg-white/85 hover:bg-white shadow-sm",
-	                          fav ? "text-rose-600" : "text-slate-700",
+	                          "absolute right-3 top-3 z-10 rounded-full p-2 transition-colors",
+	                          "bg-white hover:bg-white",
+	                          fav ? "text-destructive" : "text-slate-700",
 	                        ].join(" ")}
 	                        aria-label={fav ? "Remove from favorites" : "Add to favorites"}
 	                        title={fav ? "Remove from favorites" : "Add to favorites"}
@@ -361,18 +353,17 @@ export function RecipesView() {
                     <div className="p-4 pt-0 mt-auto flex gap-2 w-full">
                       <Button
                         variant="default"
-                        className="flex-1 bg-primary/90 hover:bg-primary px-2"
+                        className="flex-1 bg-primary hover:bg-primary px-2"
                         onClick={() => handleViewRecipe(recipe.id)}
                       >
                         Details
                       </Button>
                       <Button
                         variant={isPlanned(recipe.id) ? "secondary" : "outline"}
-                        className={isPlanned(recipe.id) ? "flex-1 text-primary bg-primary/10 hover:bg-primary/20 border-primary/20 shadow-none border px-2" : "flex-1 px-2"}
+                        className={isPlanned(recipe.id) ? "flex-1 border-0 bg-[#10120f] px-2 text-white hover:bg-[#10120f] hover:text-white" : "flex-1 px-2"}
                         onClick={() => toggleMealPlan(recipe as Recipe)}
                         title={isPlanned(recipe.id) ? "Remove from Meal Plan" : "Add to Meal Plan"}
                       >
-                        {isPlanned(recipe.id) ? <CalendarMinus className="h-4 w-4 mr-1.5 shrink-0" /> : <CalendarPlus className="h-4 w-4 mr-1.5 shrink-0" />}
                         <span className="truncate">{isPlanned(recipe.id) ? "Planned" : "Plan"}</span>
                       </Button>
                     </div>

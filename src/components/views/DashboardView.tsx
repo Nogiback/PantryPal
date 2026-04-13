@@ -17,7 +17,7 @@ const CHART_GUIDE_LINES = [CHART_GRID_TOP, 129, 196, CHART_GRID_BOTTOM];
 const CHART_AXIS_LABEL_Y = [68, 135, 202, 268];
 const CHART_LABEL_Y = 318;
 const CHART_PRIMARY_GREEN = "#00c755";
-const CHART_SECONDARY_GREEN = "rgba(0, 199, 85, 0.58)";
+const CHART_SECONDARY_GREEN = "rgba(0, 199, 85, 0.34)";
 
 const pantryLabels = ["Expired", "1-7 days", "8-30 days", "31-90 days", "90+ days", "No date"];
 const ingredientLabels = [
@@ -215,21 +215,21 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
               <div className="flex min-h-[40px] flex-wrap items-center gap-x-10 gap-y-3 text-[1.08rem]">
                 <button
                   type="button"
-                  className={mode === "pantry" ? "font-semibold tracking-[-0.03em] text-[#10120f]" : "font-medium tracking-[-0.03em] text-[#b4bbb0] transition hover:text-[#10120f]"}
+                  className={mode === "pantry" ? "font-semibold tracking-[-0.03em] text-[#10120f]" : "font-medium tracking-[-0.03em] text-[rgba(16,18,15,0.38)] transition hover:text-[#10120f]"}
                   onClick={() => setMode("pantry")}
                 >
                   Pantry health
                 </button>
                 <button
                   type="button"
-                  className={mode === "ingredients" ? "font-semibold tracking-[-0.03em] text-[#10120f]" : "font-medium tracking-[-0.03em] text-[#b4bbb0] transition hover:text-[#10120f]"}
+                  className={mode === "ingredients" ? "font-semibold tracking-[-0.03em] text-[#10120f]" : "font-medium tracking-[-0.03em] text-[rgba(16,18,15,0.38)] transition hover:text-[#10120f]"}
                   onClick={() => setMode("ingredients")}
                 >
                   Ingredients
                 </button>
                 <button
                   type="button"
-                  className={mode === "planning" ? "font-semibold tracking-[-0.03em] text-[#10120f]" : "font-medium tracking-[-0.03em] text-[#b4bbb0] transition hover:text-[#10120f]"}
+                  className={mode === "planning" ? "font-semibold tracking-[-0.03em] text-[#10120f]" : "font-medium tracking-[-0.03em] text-[rgba(16,18,15,0.38)] transition hover:text-[#10120f]"}
                   onClick={() => setMode("planning")}
                 >
                   Weekly planning
@@ -238,22 +238,22 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
               {chartData.hasData ? (
                 <div className="flex min-h-[40px] flex-wrap items-center justify-start gap-5 text-[1.02rem] xl:justify-end">
-                  <div className="inline-flex min-w-[150px] items-center justify-center rounded-[18px] bg-[#3f403d] px-5 py-2.5 text-base font-semibold leading-none text-white">
+                  <div className="inline-flex min-w-[150px] items-center justify-center rounded-[18px] bg-[#10120f] px-5 py-2.5 text-base font-semibold leading-none text-white">
                     {chartData.chip}
                   </div>
-                  <span className="inline-flex min-w-[120px] items-center gap-3 font-medium leading-none text-[#1b1d1b]">
+                    <span className="inline-flex min-w-[120px] items-center gap-3 font-medium leading-none text-[#10120f]">
                     <span className="h-3.5 w-3.5 rounded-full bg-[#00c755]" />
                     {chartData.legendPrimary}
                   </span>
                   {chartData.hasSecondaryData && (
-                    <span className="inline-flex min-w-[120px] items-center gap-3 font-medium leading-none text-[#65a97f]">
-                      <span className="h-3.5 w-3.5 rounded-full bg-[#7cdd9d]" />
+                    <span className="inline-flex min-w-[120px] items-center gap-3 font-medium leading-none text-[rgba(16,18,15,0.62)]">
+                      <span className="h-3.5 w-3.5 rounded-full bg-[rgba(0,199,85,0.34)]" />
                       {chartData.legendSecondary}
                     </span>
                   )}
                 </div>
               ) : (
-                <p className="min-h-[40px] text-base font-medium leading-[40px] text-[#a1a99f] xl:text-right">No dashboard data yet</p>
+                <p className="min-h-[40px] text-base font-medium leading-[40px] text-[rgba(16,18,15,0.48)] xl:text-right">No dashboard data yet</p>
               )}
             </div>
           </div>
@@ -261,18 +261,18 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           <div className="mt-4">
             <div className="mb-4 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[22px] border border-[#e8eaec] bg-white px-4 py-4">
-                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[#879084]">Total items</p>
+                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[rgba(16,18,15,0.52)]">Total items</p>
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[#10120f]">{totalItems}</p>
               </div>
               <div className="rounded-[22px] border border-[#e8eaec] bg-white px-4 py-4">
-                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[#879084]">Top category</p>
+                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[rgba(16,18,15,0.52)]">Top category</p>
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[#10120f]">{topIngredientCount}</p>
-                <p className="mt-1 text-sm text-[#7b837b]">{hasPantryItems ? topIngredientCategory : "No items yet"}</p>
+                <p className="mt-1 text-sm text-[rgba(16,18,15,0.58)]">{hasPantryItems ? topIngredientCategory : "No items yet"}</p>
               </div>
               <div className="rounded-[22px] border border-[#e8eaec] bg-white px-4 py-4">
-                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[#879084]">Recent adds</p>
+                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[rgba(16,18,15,0.52)]">Recent adds</p>
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[#10120f]">{recentIngredientWindow.length}</p>
-                <p className="mt-1 text-sm text-[#7b837b]">{hasPantryItems ? "Latest pantry entries" : "No recent additions"}</p>
+                <p className="mt-1 text-sm text-[rgba(16,18,15,0.58)]">{hasPantryItems ? "Latest pantry entries" : "No recent additions"}</p>
               </div>
             </div>
 
@@ -298,7 +298,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                     key={value}
                     x={CHART_AXIS_LABEL_X}
                     y={CHART_AXIS_LABEL_Y[index]}
-                    fill="#9ca59c"
+                    fill="rgba(16,18,15,0.44)"
                     fontSize="17"
                     fontWeight="500"
                     textAnchor="start"
@@ -345,7 +345,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                     key={`${label}-${index}`}
                     x={CHART_PLOT_LEFT + stepX * index}
                     y={CHART_LABEL_Y}
-                    fill="#a0a8a0"
+                    fill="rgba(16,18,15,0.44)"
                     fontSize="14"
                     fontWeight="500"
                     textAnchor="middle"
@@ -359,7 +359,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="rounded-[24px] border border-[#e8eaec] bg-white/92 px-7 py-6 text-center">
                     <p className="text-sm font-semibold text-[#10120f]">{chartData.emptyTitle}</p>
-                    <p className="mt-2 max-w-[320px] text-sm leading-6 text-[#7a837a]">
+                    <p className="mt-2 max-w-[320px] text-sm leading-6 text-[rgba(16,18,15,0.58)]">
                       {chartData.emptyBody}
                     </p>
                   </div>
@@ -374,13 +374,13 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-[1.45rem] font-medium tracking-[-0.04em] text-[#10120f]">Items in pantry</h2>
-            <p className="mt-2 text-sm leading-6 text-[#7d847b]">
+            <p className="mt-2 text-sm leading-6 text-[rgba(16,18,15,0.58)]">
               The 5 most recently added pantry items appear here automatically from your live pantry list.
             </p>
           </div>
           <button
             type="button"
-            className="text-sm font-semibold text-[#00c755]"
+            className="text-sm font-semibold text-[#10120f]"
             onClick={() => onNavigate("pantry")}
           >
             View all
@@ -388,7 +388,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         </div>
 
         <div className="mt-6 overflow-hidden rounded-[24px] border border-[#e8eaec] bg-white">
-          <div className="grid grid-cols-[2.2fr_1.2fr_1fr_1.2fr] gap-4 border-b border-[#e8eaec] px-5 py-4 text-sm font-medium text-[#9aa29a]">
+          <div className="grid grid-cols-[2.2fr_1.2fr_1fr_1.2fr] gap-4 border-b border-[#e8eaec] px-5 py-4 text-sm font-medium text-[rgba(16,18,15,0.48)]">
             <span>Name</span>
             <span>Category</span>
             <span>Quantity</span>
@@ -404,13 +404,13 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                 }`}
               >
                 <span className="font-medium">{item.name}</span>
-                <span className="text-[#606960]">{item.category || "Other"}</span>
+                <span className="text-[rgba(16,18,15,0.62)]">{item.category || "Other"}</span>
                 <span>{[item.quantity, item.unit].filter(Boolean).join(" ") || "1 item"}</span>
-                <span className="text-[#606960]">{item.expiryDate || "No date"}</span>
+                <span className="text-[rgba(16,18,15,0.62)]">{item.expiryDate || "No date"}</span>
               </div>
             ))
           ) : (
-            <div className="px-5 py-10 text-sm text-[#7c847b]">
+            <div className="px-5 py-10 text-sm text-[rgba(16,18,15,0.58)]">
               Add pantry items and your five most recent additions will appear here.
             </div>
           )}

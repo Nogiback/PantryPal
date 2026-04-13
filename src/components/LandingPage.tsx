@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { motion } from "framer-motion";
+import dashboardPreview from "../../SVGS/pantry-pal Dashboard.svg";
+import pantryPalLogo from "../../SVGS/pantry-pal-logo.svg";
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -52,9 +54,9 @@ const FEATURES = [
 
 const INTEGRATIONS = [
   {
-    title: "Barcode scan",
-    icon: "barcode",
-    text: "Scan packaged items quickly and add them to your pantry without typing every detail by hand.",
+    title: "Meal planning",
+    icon: "calendar",
+    text: "Build a weekly plan around what is already in your kitchen so meals, prep, and grocery decisions stay easy to follow.",
   },
   {
     title: "Receipt import",
@@ -113,26 +115,34 @@ const TESTIMONIALS = [
   {
     quote:
       "Pantry Pal helps me plan meals around what I already have, and that alone has made grocery shopping feel calmer and much more intentional.",
-    author: "Maya Adebisi",
-    company: "Busy home cook",
+    author: "Jenny Chan",
+    company: "Student",
     image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=1400&q=80",
+      "https://images.pexels.com/photos/1066134/pexels-photo-1066134.jpeg?cs=srgb&dl=pexels-minan1398-1066134.jpg&fm=jpg",
   },
   {
     quote:
       "I love that it turns pantry ingredients into actual dinner ideas. It feels practical, clear, and built around how people really cook at home.",
     author: "Jordan Mensah",
-    company: "Family planner",
+    company: "Working professional",
     image:
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=1400&q=80",
+      "https://images.pexels.com/photos/7428657/pexels-photo-7428657.jpeg?cs=srgb&dl=pexels-august-de-richelieu-7428657.jpg&fm=jpg",
   },
   {
     quote:
       "The weekly planning flow makes it easier to waste less food and still know what everyone in the house can eat during the week.",
-    author: "Leah Okoro",
-    company: "Meal prep user",
+    author: "Gillian Roberts",
+    company: "Content creator",
     image:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1400&q=80",
+      "https://images.pexels.com/photos/6593585/pexels-photo-6593585.jpeg?cs=srgb&dl=pexels-shvetsa-6593585.jpg&fm=jpg",
+  },
+  {
+    quote:
+      "I like trying dishes from different cultures, and Pantry Pal makes it easier to turn what I already have into something new, exciting, and worth sharing.",
+    author: "Vineeth Kaur",
+    company: "Foodie",
+    image:
+      "https://images.pexels.com/photos/18036890/pexels-photo-18036890.jpeg?cs=srgb&dl=pexels-theamritdev-18036890.jpg&fm=jpg",
   },
 ];
 
@@ -393,26 +403,11 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
           <button
             type="button"
             onClick={() => scrollToId("top")}
-            className="flex items-center gap-3 text-sm font-semibold tracking-[0.04em] text-[#10120f]"
+            className="flex items-center gap-1.5 text-base font-bold tracking-[0.04em] text-[#10120f]"
           >
-            <span className="lp-brand-pill">PP</span>
-            Pantry Pal
+            <img src={pantryPalLogo} alt="Pantry Pal logo" className="block h-6 w-6 rounded-full object-contain" />
+            <span className="inline-flex items-center leading-none">Pantry Pal</span>
           </button>
-
-          <nav className="hidden items-center gap-8 text-sm font-medium text-[#666b62] lg:flex">
-            <button type="button" className="transition hover:text-[#10120f]" onClick={() => scrollToId("toolkit")}>
-              Toolkit
-            </button>
-            <button type="button" className="transition hover:text-[#10120f]" onClick={() => scrollToId("features")}>
-              Features
-            </button>
-            <button type="button" className="transition hover:text-[#10120f]" onClick={() => scrollToId("support")}>
-              Support
-            </button>
-            <button type="button" className="transition hover:text-[#10120f]" onClick={() => scrollToId("faq")}>
-              FAQ
-            </button>
-          </nav>
 
           <button
             type="button"
@@ -428,7 +423,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
         id="top"
         className="mx-auto flex w-full max-w-screen-2xl flex-col gap-24 px-4 pb-24 pt-28 sm:px-5 lg:px-7"
       >
-        <section className="grid gap-8 lg:gap-4 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-6">
           <div data-hero-left className="max-w-xl">
             <p className="lp-eyebrow">Smart kitchen tools for modern homes</p>
             <h1 className="display-font mt-5 text-[clamp(3.15rem,7vw,6.1rem)] leading-[0.95] tracking-[-0.06em] text-[#10120f]">
@@ -463,10 +458,10 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
             </div>
           </div>
 
-          <div data-hero-right className="rounded-[40px] border border-[#e4e8db] bg-white p-4">
+          <div data-hero-right className="self-start rounded-[40px] border border-[#e4e8db] bg-white p-4">
             <div className="overflow-hidden rounded-[32px] bg-[#10120f]">
               <video
-                className="block aspect-[4/5] w-full object-cover"
+                className="block aspect-[5/4] w-full object-cover lg:aspect-square"
                 autoPlay
                 controls
                 loop
@@ -539,12 +534,18 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
                 <PlaceholderIcon icon="monitor" />
               </div>
 
-              <div className="mt-8 grid flex-1 gap-4 md:grid-cols-2">
-                <div className="rounded-[28px] border border-white/14 bg-white/3 px-5 py-16 text-center text-sm text-white/55">
-                  Pantry overview
-                </div>
-                <div className="rounded-[28px] border border-white/14 bg-white/3 px-5 py-16 text-center text-sm text-white/55">
-                  Weekly meal plan
+              <div className="mt-8 flex flex-1">
+                <div className="w-full overflow-hidden rounded-[28px] border border-white/14 bg-white/3">
+                  <div className="border-b border-white/10 px-5 py-3 text-sm text-white/55">
+                    Pantry overview
+                  </div>
+                  <div className="bg-white p-0">
+                    <img
+                      src={dashboardPreview}
+                      alt="Pantry Pal dashboard preview"
+                      className="block w-full h-auto"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -745,7 +746,36 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
             </button>
           </div>
         </FadeIn>
+
       </main>
+
+      <footer className="bg-[#10120f] px-4 py-8 text-white sm:px-5 lg:px-7">
+        <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <button
+            type="button"
+            onClick={() => scrollToId("top")}
+            className="flex items-center gap-1.5 text-left text-base font-bold tracking-[0.04em] text-white"
+          >
+            <img src={pantryPalLogo} alt="Pantry Pal logo" className="block h-6 w-6 rounded-full object-contain" />
+            <span className="inline-flex items-center leading-none">Pantry Pal</span>
+          </button>
+
+          <nav className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium text-white/72">
+            <button type="button" className="transition hover:text-white" onClick={() => scrollToId("toolkit")}>
+              Toolkit
+            </button>
+            <button type="button" className="transition hover:text-white" onClick={() => scrollToId("features")}>
+              Features
+            </button>
+            <button type="button" className="transition hover:text-white" onClick={() => scrollToId("support")}>
+              Support
+            </button>
+            <button type="button" className="transition hover:text-white" onClick={() => scrollToId("faq")}>
+              FAQ
+            </button>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 }

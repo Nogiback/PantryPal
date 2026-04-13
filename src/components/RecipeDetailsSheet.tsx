@@ -45,12 +45,12 @@ export function RecipeDetailsSheet({ recipe, isOpen, onClose, isLoading }: Recip
               <div className="absolute inset-0 bg-black/55 flex flex-col justify-end p-6">
                 <div className="flex gap-2 mb-2">
                     {recipe.dishTypes?.slice(0, 3).map(type => (
-                        <Badge key={type} className="w-fit bg-primary/90 hover:bg-primary border-0 capitalize">
+                        <Badge key={type} className="w-fit border border-[#e8eaec] bg-[#f7faf7] capitalize text-[#10120f] hover:bg-[#f7faf7]">
                         {type}
                         </Badge>
                     ))}
                 </div>
-                <DialogTitle className="text-white text-2xl md:text-3xl font-bold leading-tight drop-shadow-md">
+                <DialogTitle className="text-white text-2xl md:text-3xl font-bold leading-[1.2]">
                   {recipe.title}
                 </DialogTitle>
                 <DialogDescription className="sr-only">
@@ -78,23 +78,23 @@ export function RecipeDetailsSheet({ recipe, isOpen, onClose, isLoading }: Recip
                 
                 {/* Summary */}
                 <div 
-                  className="text-muted-foreground leading-relaxed text-sm [&>a]:text-primary [&>a]:underline"
+                  className="rounded-[24px] border border-[#e8eaec] bg-[#f7faf7] p-5 text-sm leading-[1.5] text-muted-foreground [&>a]:text-primary [&>a]:underline"
                   dangerouslySetInnerHTML={{ __html: recipe.summary }}
                 />
 
                 <div className="grid md:grid-cols-2 gap-8">
                   {/* Ingredients */}
                   <div className="space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2 text-primary">
+                    <h3 className="text-lg font-semibold text-[#10120f]">
                        Ingredients
                     </h3>
                     <ul className="space-y-3 text-sm">
                       {recipe.extendedIngredients?.map((ing: any, idx: number) => (
-                        <li key={`${ing.id}-${idx}`} className="flex items-start gap-3 p-2 rounded-md bg-muted/40 hover:bg-muted/60 transition-colors">
+                        <li key={`${ing.id}-${idx}`} className="flex items-start gap-3 rounded-2xl border border-[#10120f] bg-[#10120f] p-3">
                           <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
                           <div className="flex flex-col">
-                              <span className="font-medium text-foreground/90">{ing.name}</span>
-                              <span className="text-xs text-muted-foreground">{ing.amount} {ing.unit}</span>
+                              <span className="font-medium text-white">{ing.name}</span>
+                              <span className="text-xs text-[rgba(255,255,255,0.62)]">{ing.amount} {ing.unit}</span>
                           </div>
                         </li>
                       ))}
@@ -103,7 +103,7 @@ export function RecipeDetailsSheet({ recipe, isOpen, onClose, isLoading }: Recip
 
                   {/* Details & Tags */}
                   <div className="space-y-4">
-                    <h3 className="font-semibold text-lg text-primary">Details</h3>
+                    <h3 className="text-lg font-semibold text-[#10120f]">Details</h3>
                     <div className="flex flex-wrap gap-2">
                        {recipe.vegetarian && <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">Vegetarian</Badge>}
                        {recipe.vegan && <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">Vegan</Badge>}
@@ -139,22 +139,22 @@ export function RecipeDetailsSheet({ recipe, isOpen, onClose, isLoading }: Recip
 
                 {/* Instructions */}
                 <div className="space-y-4 pb-8">
-                  <h3 className="font-semibold text-lg text-primary">Instructions</h3>
+                  <h3 className="text-lg font-semibold text-[#10120f]">Preparation</h3>
                   {recipe.analyzedInstructions?.[0]?.steps?.length > 0 ? (
                     <div className="space-y-6">
                       {recipe.analyzedInstructions[0].steps.map((step) => (
                         <div key={step.number} className="flex gap-4 group">
-                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm group-hover:bg-primary group-hover:text-white transition-colors border border-primary/20">
+                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-[#e8eaec] bg-white text-sm font-bold text-[#10120f] transition-colors group-hover:bg-[#10120f] group-hover:text-white">
                             {step.number}
                           </div>
-                          <p className="text-sm leading-relaxed pt-1.5 text-foreground/90">
+                          <p className="max-w-[520px] rounded-[20px] border border-[#e8eaec] bg-[#f7faf7] px-4 py-3 text-sm leading-[1.5] text-foreground/90">
                             {step.step}
                           </p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="p-8 text-center bg-muted/20 rounded-lg border border-border/60">
+                    <div className="rounded-[20px] border border-[#e8eaec] bg-[#f7faf7] p-8 text-center">
                         <p className="text-muted-foreground italic">No detailed instructions available within the app.</p>
                         <Button variant="link" asChild className="mt-2">
                             <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer">Try viewing the original website</a>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { MoreHorizontal, Plus, ScanLine, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -71,10 +71,10 @@ const getExpiryProgress = (item: Ingredient) => {
 
 const getProgressColor = (item: Ingredient) => {
   const daysLeft = getDaysUntilExpiry(item.expiryDate);
-  if (daysLeft === null) return "#d9b1bc";
-  if (daysLeft <= 2) return "#d95c69";
-  if (daysLeft <= 7) return "#df8fa3";
-  return "#d7dfd6";
+  if (daysLeft === null) return "#e8eaec";
+  if (daysLeft <= 2) return "#d9534f";
+  if (daysLeft <= 7) return "#00c755";
+  return "#dce9dd";
 };
 
 const getQuantityLabel = (item: Ingredient) => {
@@ -179,7 +179,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
       >
         <div>
           <h2 className="page-title text-[#10120f]">Pantry items</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#737a72]">
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[rgba(16,18,15,0.58)]">
             Track what is in every shelf and drawer.
             {saveStatus === "loading" ? " Saving your pantry changes..." : ""}
           </p>
@@ -195,13 +195,13 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
           {categorySections.map((section) => (
             <section
               key={section.category}
-              className="overflow-hidden rounded-[22px] border border-[#e8eaec] bg-[#fcfcfc]"
+              className="overflow-hidden rounded-[22px] bg-[#fcfcfc] ring-1 ring-inset ring-[#e8eaec]"
             >
               <div className="border-b border-[#e8eaec] px-8 py-7 sm:px-9">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="text-[1.08rem] font-semibold tracking-[-0.04em] text-[#10120f]">{section.label}</h3>
-                    <p className="mt-2 text-[0.92rem] text-[#8a9188]">
+                    <p className="mt-2 text-[0.92rem] text-[rgba(16,18,15,0.52)]">
                       {section.totalCount === 0
                         ? "No items added yet."
                         : `${section.totalCount} ${section.totalCount === 1 ? "item" : "items"} in this category`}
@@ -209,7 +209,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
                   </div>
                 </div>
 
-                <div className={`mt-8 grid ${PANTRY_TABLE_GRID} items-center gap-4 text-[0.78rem] font-medium tracking-[0.04em] text-[#9ea69d]`}>
+                <div className={`mt-8 grid ${PANTRY_TABLE_GRID} items-center gap-4 text-[0.78rem] font-medium tracking-[0.04em] text-[rgba(16,18,15,0.48)]`}>
                   <span className="justify-self-start">Number</span>
                   <span className="justify-self-start">Items</span>
                   <span className="justify-self-start">Quantity</span>
@@ -228,21 +228,21 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
                         key={item.id}
                         className={`grid ${PANTRY_TABLE_GRID} items-center gap-4 px-8 py-4 sm:px-9`}
                       >
-                        <span className="justify-self-start text-[0.9rem] font-medium text-[#8d958b]">
+                        <span className="justify-self-start text-[0.9rem] font-medium text-[rgba(16,18,15,0.52)]">
                           {String(index + 1).padStart(2, "0")}
                         </span>
 
                         <div className="flex min-w-0 items-center gap-4 pl-2">
-                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#ff616d] text-[1rem] font-semibold text-white">
+                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#00c755] text-[1rem] font-semibold text-white">
                             {item.name.trim().charAt(0).toUpperCase() || "P"}
                           </span>
                           <div className="min-w-0">
-                            <p className="truncate text-[0.92rem] font-normal text-[#1b1d1b]">{item.name}</p>
-                            {item.notes ? <p className="truncate text-[0.82rem] text-[#97a096]">{item.notes}</p> : null}
+                            <p className="truncate text-[0.92rem] font-normal text-[#10120f]">{item.name}</p>
+                            {item.notes ? <p className="truncate text-[0.82rem] text-[rgba(16,18,15,0.48)]">{item.notes}</p> : null}
                           </div>
                         </div>
 
-                        <p className="justify-self-start text-[0.92rem] font-normal text-[#353934]">{getQuantityLabel(item)}</p>
+                        <p className="justify-self-start text-[0.92rem] font-normal text-[rgba(16,18,15,0.82)]">{getQuantityLabel(item)}</p>
 
                         <div className="flex min-w-0 items-center gap-3 justify-self-start">
                           <div className="h-[5px] w-full min-w-[140px] max-w-[180px] overflow-hidden rounded-full bg-[#e8eaec]">
@@ -251,14 +251,14 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
                               style={{ width: `${progress}%`, backgroundColor: progressColor }}
                             />
                           </div>
-                          <span className="min-w-[84px] text-left text-[0.92rem] font-normal text-[#555c54]">
+                          <span className="min-w-[84px] text-left text-[0.92rem] font-normal text-[rgba(16,18,15,0.62)]">
                             {getExpiryLabel(item.expiryDate)}
                           </span>
                         </div>
 
                         <button
                           type="button"
-                          className="grid h-8 w-8 justify-self-center place-items-center rounded-full text-[#b7bcb5] transition hover:bg-[#f4f7f0] hover:text-[#10120f]"
+                          className="grid h-8 w-8 justify-self-center place-items-center rounded-full text-[rgba(16,18,15,0.34)] transition hover:bg-[#dce9dd] hover:text-[#10120f]"
                           onClick={() => setSelectedItem(item)}
                           aria-label={`Open actions for ${item.name}`}
                         >
@@ -271,7 +271,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
               </div>
  
               {section.totalCount > ITEM_LIMIT ? (
-                <div className="border-t border-[#e8eaec] px-8 py-4 text-sm text-[#97a096] sm:px-9">
+                <div className="border-t border-[#e8eaec] px-8 py-4 text-sm text-[rgba(16,18,15,0.48)] sm:px-9">
                   Showing the first {ITEM_LIMIT} items. Add filters or remove items to see more clearly.
                 </div>
               ) : null}
@@ -284,7 +284,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
 
       <button
         type="button"
-        className={`fixed bottom-11 right-7 z-[60] grid h-14 w-14 place-items-center rounded-full bg-[#00c755] text-white shadow-[0_10px_24px_-14px_rgba(16,18,15,0.28)] transition hover:bg-[#00c755] ${isActionMenuOpen ? "pointer-events-none" : ""}`}
+        className={`fixed bottom-11 right-7 z-[60] grid h-14 w-14 place-items-center rounded-full bg-[#00c755] text-[#10120f] transition hover:bg-[#00c755] hover:text-[#10120f] ${isActionMenuOpen ? "pointer-events-none" : ""}`}
         onClick={() => setIsActionMenuOpen(true)}
         aria-label="Open pantry actions"
       >
@@ -292,34 +292,32 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
       </button>
 
       <Dialog open={isActionMenuOpen} onOpenChange={setIsActionMenuOpen}>
-        <DialogContent className="max-w-[380px] rounded-[18px] border-[#e8eaec] bg-white p-0">
-          <div className="px-6 pb-6 pt-8">
-            <DialogHeader className="text-left">
+        <DialogContent className="max-w-[360px] rounded-[18px] border-[#e8eaec] bg-white p-0 [&>button]:right-2.5 [&>button]:top-2.5">
+          <div className="px-5 pb-5 pt-6">
+            <DialogHeader className="space-y-1 text-left">
               <DialogTitle className="text-[1.22rem] font-semibold tracking-[-0.04em] text-[#10120f]">
                 Pantry actions
               </DialogTitle>
-              <DialogDescription className="mt-2 text-sm leading-6 text-[#747b73]">
+              <DialogDescription className="text-sm leading-5 text-[rgba(16,18,15,0.58)]">
                 Choose how you want to update your pantry.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="mt-6 grid gap-3">
+            <div className="mt-4 grid grid-cols-2 gap-3">
               <Button
                 type="button"
-                variant="outline"
-                className="justify-start border-[#e8eaec] bg-white text-[#10120f] hover:bg-[#dce9dd]"
-                onClick={handleOpenScan}
+                className="h-10 w-full bg-[#00c755] px-4 text-[#10120f] hover:bg-[#00c755] hover:text-[#10120f]"
+                onClick={handleOpenAddIngredient}
               >
-                <ScanLine className="h-4 w-4" />
-                Scan items
+                Add ingredient
               </Button>
               <Button
                 type="button"
-                className="justify-start bg-[#00c755] text-white hover:bg-[#00c755] hover:text-white"
-                onClick={handleOpenAddIngredient}
+                variant="outline"
+                className="h-10 w-full border-[#e8eaec] bg-white px-4 text-[#10120f] hover:bg-[#dce9dd]"
+                onClick={handleOpenScan}
               >
-                <Plus className="h-4 w-4" />
-                Add ingredient
+                Scan items
               </Button>
             </div>
           </div>
@@ -333,7 +331,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
               <DialogTitle className="text-[1.4rem] font-semibold tracking-[-0.04em] text-[#10120f]">
                 Pantry item actions
               </DialogTitle>
-              <DialogDescription className="mt-2 text-sm leading-6 text-[#747b73]">
+              <DialogDescription className="mt-2 text-sm leading-6 text-[rgba(16,18,15,0.58)]">
                 {selectedItem
                   ? `Choose what you want to do with ${selectedItem.name}.`
                   : "Choose what you want to do with this pantry item."}
@@ -342,8 +340,8 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
 
             {selectedItem ? (
               <div className="mt-5 rounded-[12px] border border-[#e8eaec] bg-white px-4 py-4">
-                <p className="text-sm font-semibold text-[#181a18]">{selectedItem.name}</p>
-                <p className="mt-1 text-sm text-[#7d857c]">
+                <p className="text-sm font-semibold text-[#10120f]">{selectedItem.name}</p>
+                <p className="mt-1 text-sm text-[rgba(16,18,15,0.58)]">
                   {getQuantityLabel(selectedItem)} • {getExpiryLabel(selectedItem.expiryDate)}
                 </p>
               </div>
@@ -363,7 +361,6 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
                 className="bg-[#10120f] text-white hover:bg-[#10120f] hover:text-white"
                 onClick={handleDelete}
               >
-                <Trash2 className="h-4 w-4" />
                 Delete item
               </Button>
             </DialogFooter>

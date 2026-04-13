@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cacheLocalAuthUser, createLocalSession, setAuthMode, signupLocalUser } from "@/lib/localAuth";
 
@@ -15,6 +15,8 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -120,10 +122,12 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
             className="flex items-center gap-3 text-sm font-semibold tracking-[0.04em] text-[#10120f]"
             onClick={onBack}
           >
-            <span className="brand-pill">PP</span>
+            <span className="brand-pill">
+              <Heart className="h-4 w-4" />
+            </span>
             Pantry Pal
           </button>
-          <button type="button" className="text-sm font-semibold text-primary" onClick={onGoToLogin}>
+          <button type="button" className="text-sm font-semibold text-[#10120f]" onClick={onGoToLogin}>
             Log in
           </button>
         </div>
@@ -141,8 +145,8 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
               <h1 className="page-title text-[#10120f]">
                 Let&apos;s get started
               </h1>
-              <p className="mt-4 text-[0.96rem] leading-7 text-[#6d726a]">
-                Create your Pantry Pal account, then move directly into the improved AI pantry workspace.
+              <p className="mt-4 text-[0.96rem] text-[rgba(16,18,15,0.62)]">
+                Create your Pantry Pal account, then move directly into your pantry workspace.
               </p>
             </div>
 
@@ -151,6 +155,7 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
                 <label className="auth-label">
                   First name
                   <Input
+                    className="auth-input"
                     placeholder="Your first name"
                     value={firstName || ""}
                     onChange={(e) => setName(`${e.target.value} ${lastName}`.trim())}
@@ -159,6 +164,7 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
                 <label className="auth-label">
                   Last name
                   <Input
+                    className="auth-input"
                     placeholder="Your last name"
                     value={lastName}
                     onChange={(e) => setName(`${firstName || ""} ${e.target.value}`.trim())}
@@ -168,12 +174,13 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
 
               <label className="auth-label">
                 Household name
-                <Input placeholder="What should we call your kitchen?" />
+                <Input className="auth-input" placeholder="What should we call your kitchen?" />
               </label>
 
               <label className="auth-label">
                 Email address
                 <Input
+                  className="auth-input"
                   type="email"
                   placeholder="Your email address"
                   value={email}
@@ -185,33 +192,41 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
                 Password
                 <div className="relative">
                   <Input
-                    className="pr-16"
-                    type="password"
+                    className="auth-input pr-16"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Password (min. of 8 characters)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                  <button className="auth-inline-action" type="button">Show</button>
+                  <button className="auth-inline-action" type="button" onClick={() => setShowPassword((current) => !current)}>
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
                 </div>
               </label>
 
               <label className="auth-label">
                 Confirm password
-                <Input
-                  type="password"
-                  placeholder="Repeat password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <Input
+                    className="auth-input pr-16"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Repeat password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                  <button className="auth-inline-action" type="button" onClick={() => setShowConfirmPassword((current) => !current)}>
+                    {showConfirmPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
               </label>
 
               <label className="auth-check auth-check-start">
                 <input type="checkbox" />
                 <span>
                   I have read, understood and agree to Pantry Pal&apos;s{" "}
-                  <button type="button" className="text-primary underline underline-offset-2">Privacy Policy</button>{" "}
+                  <button type="button" className="text-[#10120f] underline underline-offset-2">Privacy Policy</button>{" "}
                   and{" "}
-                  <button type="button" className="text-primary underline underline-offset-2">Terms and Conditions</button>.
+                  <button type="button" className="text-[#10120f] underline underline-offset-2">Terms and Conditions</button>.
                 </span>
               </label>
 
@@ -228,29 +243,29 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
                 </div>
               )}
 
-              <button className="auth-submit" disabled={isSubmitting} type="submit">
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
+              <button className="auth-submit auth-submit--primary" disabled={isSubmitting} type="submit">
+                {isSubmitting ? "Creating account..." : "Create account"}
               </button>
             </form>
 
             <div className="auth-support-card">
-              <p className="text-[0.96rem] font-semibold text-[#2c2e2a]">Need help creating your account?</p>
+              <p className="text-[0.96rem] font-semibold text-[#10120f]">Need help creating your account?</p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                <button type="button" className="font-semibold text-primary">Chat with us</button>
-                <span className="text-[#cfd4cc]">|</span>
-                <button type="button" className="text-[#b3b9b1]">Run npm run dev:user</button>
+                <button type="button" className="font-semibold text-[#10120f]">Chat with us</button>
+                <span className="text-[#e8eaec]">|</span>
+                <button type="button" className="text-[rgba(16,18,15,0.48)]">Run npm run dev:user</button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 text-sm text-[#667067]">
+            <div className="flex items-center justify-between gap-3 text-sm text-[rgba(16,18,15,0.62)]">
               <span>Already have an account?</span>
-              <button type="button" className="font-semibold text-primary" onClick={onGoToLogin}>
+              <button type="button" className="font-semibold text-[#10120f]" onClick={onGoToLogin}>
                 Log in
               </button>
             </div>
 
             <div className="pt-3 text-center">
-              <button type="button" className="text-sm font-medium text-primary underline underline-offset-4">
+              <button type="button" className="text-sm font-medium text-[#10120f] underline underline-offset-4">
                 Why households are switching to Pantry Pal
               </button>
             </div>

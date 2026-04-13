@@ -30,12 +30,12 @@ export function FavoritesView() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
     >
-      <Card className="border-border/60 bg-background/60">
+      <Card className="border-[#e8eaec] bg-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Heart className="h-4 w-4 text-rose-600" fill="currentColor" />
+                <Heart className="h-4 w-4 text-destructive" fill="currentColor" />
                 Favourites
               </CardTitle>
               <CardDescription>Your saved Spoonacular recipes.</CardDescription>
@@ -44,11 +44,11 @@ export function FavoritesView() {
         </CardHeader>
         <CardContent className="pt-0">
           {favorites.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-6 text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border/60 bg-muted/20 p-6 text-sm text-muted-foreground">
               No favourites yet — tap the heart on any recipe card.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-border/60 bg-background divide-y divide-border/60">
+            <div className="overflow-hidden rounded-xl border border-[#e8eaec] bg-white divide-y divide-border/60">
               {favorites.map((fav) => (
                 <div
                   key={fav.id}
@@ -82,7 +82,7 @@ export function FavoritesView() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="rounded-full text-rose-600 hover:bg-muted"
+                    className="rounded-full text-destructive hover:bg-muted"
                     aria-label="Remove from favourites"
                     title="Remove from favourites"
                     onClick={(e) => {
@@ -113,4 +113,3 @@ export function FavoritesView() {
     </motion.div>
   );
 }
-

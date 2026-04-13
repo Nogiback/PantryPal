@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ChefHat, ChevronLeft, ChevronRight, Loader2, Save, Sparkles, UserRound, X } from "lucide-react";
+import { ChefHat, Loader2, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -113,7 +113,7 @@ const TogglePill = ({
       <span
         className={[
           "h-3.5 w-3.5 rounded-full border grid place-items-center",
-          selected ? "border-primary bg-primary shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" : "border-muted-foreground/40",
+          selected ? "border-primary bg-primary shadow-[0_0_0_3px_rgba(0,199,85,0.18)]" : "border-muted-foreground/40",
         ].join(" ")}
       />
     </div>
@@ -449,8 +449,7 @@ export function ProfileView() {
               onClick={openQuestionnaire}
               disabled={isLoading}
             >
-              <Sparkles className="h-4 w-4" />
-              <span className="ml-2">Questionnaire</span>
+              Questionnaire
             </Button>
           ) : null}
           {!isEditing ? (
@@ -464,8 +463,7 @@ export function ProfileView() {
               }}
               disabled={isLoading}
             >
-              <UserRound className="h-4 w-4" />
-              <span className="ml-2">Edit preferences</span>
+              Edit preferences
             </Button>
           ) : (
             <>
@@ -475,19 +473,17 @@ export function ProfileView() {
                 onClick={cancel}
                 disabled={isSaving}
               >
-                <X className="h-4 w-4" />
-                <span className="ml-2">Cancel</span>
+                Cancel
               </Button>
               <Button className="rounded-full" onClick={save} disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                <span className="ml-2">{isSaving ? "Saving…" : "Save"}</span>
+                {isSaving ? "Saving…" : "Save"}
               </Button>
             </>
           )}
         </div>
       </div>
 
-      {error && <div className="p-3 rounded-xl bg-red-50 text-red-700 border border-red-100 text-sm">{error}</div>}
+      {error && <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive">{error}</div>}
       {message && <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100 text-sm">{message}</div>}
 
       {!isLoading && !onboardingCompleted && (
@@ -528,7 +524,7 @@ export function ProfileView() {
           </DialogHeader>
 
           {questionError && (
-            <div className="p-3 rounded-xl bg-red-50 text-red-700 border border-red-100 text-sm">{questionError}</div>
+            <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive">{questionError}</div>
           )}
 
           <div className="space-y-5">
@@ -697,8 +693,7 @@ export function ProfileView() {
                 onClick={() => setQuestionStep((s) => Math.max(1, s - 1))}
                 disabled={questionStep === 1 || isQuestionSaving}
               >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="ml-2">Back</span>
+                Back
               </Button>
             </div>
 
@@ -710,13 +705,11 @@ export function ProfileView() {
                   onClick={() => setQuestionStep((s) => Math.min(4, s + 1))}
                   disabled={isQuestionSaving}
                 >
-                  <span className="mr-2">Next</span>
-                  <ChevronRight className="h-4 w-4" />
+                  Next
                 </Button>
               ) : (
                 <Button type="button" className="rounded-full" onClick={saveQuestionnaire} disabled={isQuestionSaving}>
-                  {isQuestionSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  <span className="ml-2">{isQuestionSaving ? "Saving…" : "Save"}</span>
+                  {isQuestionSaving ? "Saving…" : "Save"}
                 </Button>
               )}
             </div>

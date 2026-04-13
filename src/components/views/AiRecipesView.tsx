@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { ChefHat, Loader2, RefreshCw, Sparkles, CheckCircle2, Clock, Users, CalendarPlus, CalendarMinus } from "lucide-react";
+import { ChefHat, Sparkles, CheckCircle2, Clock, Users } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchAiRecipes } from "@/store/slices/recipesSlice";
 import { addRecipeToPlan, removeRecipeFromPlan } from "@/store/slices/mealPlannerSlice";
@@ -66,20 +66,15 @@ export function AiRecipesView() {
           <Button
             onClick={handleGenerate}
             disabled={ingredients.length === 0 || aiStatus === "loading"}
-            className="bg-primary hover:bg-primary/90 rounded-full shadow-sm"
+            className="bg-primary hover:bg-primary rounded-full"
           >
-            {aiStatus === "loading" ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-2 h-4 w-4" />
-            )}
-            Regenerate
+            {aiStatus === "loading" ? "Regenerating..." : "Regenerate"}
           </Button>
         </div>
       </div>
 
       {aiError && (
-        <div className="p-4 text-red-500 bg-red-50 rounded-xl border border-red-200 shadow-sm">
+        <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-4 text-destructive">
           Error: {aiError}
         </div>
       )}
@@ -91,25 +86,25 @@ export function AiRecipesView() {
               {Array.from({ length: 3 }).map((_, idx) => (
                 <Card
                   key={idx}
-                  className="overflow-hidden border-primary/20 bg-background/50 animate-pulse rounded-3xl"
+                  className="overflow-hidden rounded-3xl border-[#e8eaec] bg-white animate-pulse"
                 >
-                  <div className="h-56 bg-primary/10" />
+                  <div className="h-56 bg-[#fcfcfc]" />
                   <CardContent className="p-6 space-y-4">
-                    <div className="h-6 w-3/4 bg-primary/10 rounded-xl" />
-                    <div className="h-4 w-1/2 bg-primary/5 rounded-xl" />
-                    <div className="h-24 w-full bg-primary/5 rounded-xl mt-6" />
+                    <div className="h-6 w-3/4 rounded-xl bg-[#f3f4f5]" />
+                    <div className="h-4 w-1/2 rounded-xl bg-[#f3f4f5]" />
+                    <div className="mt-6 h-24 w-full rounded-xl bg-[#f3f4f5]" />
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : aiStatus !== "loading" && aiRecipes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border border-primary/20 rounded-3xl bg-primary/5 h-64">
-              <ChefHat className="h-16 w-16 mb-4 text-primary/40" />
-              <h3 className="text-xl font-bold text-primary">Ready to cook?</h3>
+            <div className="flex h-64 flex-col items-center justify-center rounded-3xl border border-border/60 bg-muted/20 p-12 text-center text-muted-foreground">
+              <ChefHat className="mb-4 h-16 w-16 text-[rgba(16,18,15,0.24)]" />
+              <h3 className="text-xl font-bold text-[#10120f]">Ready to cook?</h3>
               <p className="text-sm mt-2 mb-6 max-w-sm">
                 Add some items to your pantry, then ask the AI Chef to brainstorm unique recipes for you!
               </p>
-              <Button onClick={handleGenerate} disabled={ingredients.length === 0} className="rounded-full shadow-md">
+              <Button onClick={handleGenerate} disabled={ingredients.length === 0} className="rounded-full">
                 Generate First Recipes
               </Button>
             </div>
@@ -125,7 +120,7 @@ export function AiRecipesView() {
                     whileHover={{ y: -5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <Card className="flex flex-col h-full overflow-hidden transition-all border-primary/20 rounded-3xl bg-white py-0">
+                    <Card className="flex h-full flex-col overflow-hidden rounded-3xl border-[#e8eaec] bg-white py-0 transition-all">
                       <div className="relative h-64 w-full overflow-hidden">
                         {recipe.imageUrl ? (
                           <img
@@ -135,8 +130,8 @@ export function AiRecipesView() {
                             loading="lazy"
                           />
                         ) : (
-                          <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                            <ChefHat className="h-12 w-12 text-primary/30" />
+                          <div className="flex h-full w-full items-center justify-center bg-[#fcfcfc]">
+                            <ChefHat className="h-12 w-12 text-[rgba(16,18,15,0.24)]" />
                           </div>
                         )}
                         <div className="absolute inset-x-0 bottom-0 bg-black/60 p-6 pt-16">
@@ -152,7 +147,7 @@ export function AiRecipesView() {
                       </div>
 
                       <CardContent className="flex-1 p-6 flex flex-col gap-6">
-                        <div className="flex items-center gap-6 text-sm font-semibold text-muted-foreground bg-primary/5 p-3 rounded-2xl border border-primary/10">
+                        <div className="flex items-center gap-6 rounded-2xl border border-[#e8eaec] bg-white p-3 text-sm font-semibold text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-emerald-600" />
                             {recipe.estimatedTime}
@@ -169,11 +164,11 @@ export function AiRecipesView() {
                               <h4 className="text-sm font-bold uppercase tracking-wider text-primary">
                                 Ingredients
                               </h4>
-                              <span className="text-xs font-bold bg-primary text-white px-2.5 py-1 rounded-full shadow-sm">
+                              <span className="rounded-full border border-[#e8eaec] bg-white px-2.5 py-1 text-xs font-bold text-[#10120f]">
                                 {usedCount}/{totalCount} from Pantry
                               </span>
                             </div>
-                            <ul className="space-y-2.5 bg-background border border-border/50 p-4 rounded-2xl shadow-xs">
+                            <ul className="space-y-2.5 rounded-2xl border border-[#e8eaec] bg-white p-4">
                               {recipe.ingredients.map((ing, i) => (
                                 <li key={i} className="flex items-start gap-2.5 text-sm">
                                   {ing.fromPantry ? (
@@ -196,7 +191,7 @@ export function AiRecipesView() {
                             <ol className="space-y-4 text-sm text-foreground/90 list-none">
                               {recipe.instructions.map((step, i) => (
                                 <li key={i} className="flex gap-3 leading-relaxed">
-                                  <span className="flex-none flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary font-bold text-xs mt-0.5">
+                                  <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border border-[#e8eaec] bg-white text-xs font-bold text-[#10120f]">
                                     {i + 1}
                                   </span>
                                   <span>{step}</span>
@@ -207,15 +202,14 @@ export function AiRecipesView() {
                         </div>
                         
                         <div className="mt-auto pt-4 space-y-4">
-                          <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 text-sm font-medium italic text-muted-foreground/80 text-center">
+                          <div className="rounded-2xl border border-[#e8eaec] bg-white p-4 text-center text-sm font-medium italic text-muted-foreground/80">
                             "{recipe.finalDish}"
                           </div>
                           <Button
                             variant={isPlanned(recipe.title) ? "secondary" : "default"}
-                            className={isPlanned(recipe.title) ? "w-full text-primary bg-primary/10 hover:bg-primary/20" : "w-full bg-primary/90 hover:bg-primary"}
+                            className={isPlanned(recipe.title) ? "w-full border border-[#e8eaec] bg-white text-[#10120f] hover:bg-[#dce9dd]" : "w-full bg-primary hover:bg-primary"}
                             onClick={() => toggleMealPlan(recipe as AiRecipe)}
                           >
-                            {isPlanned(recipe.title) ? <CalendarMinus className="h-5 w-5 mr-2" /> : <CalendarPlus className="h-5 w-5 mr-2" />}
                             {isPlanned(recipe.title) ? "Remove from Meal Plan" : "Add to Meal Plan"}
                           </Button>
                         </div>

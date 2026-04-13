@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChefHat,
-  ChevronLeft,
-  ChevronRight,
   CheckCircle2,
   Sparkles,
   Target,
@@ -138,7 +136,7 @@ const TogglePill = ({
       <span
         className={[
           "h-3.5 w-3.5 rounded-full border grid place-items-center",
-          selected ? "border-primary bg-primary shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" : "border-muted-foreground/40",
+          selected ? "border-primary bg-primary shadow-[0_0_0_3px_rgba(0,199,85,0.18)]" : "border-muted-foreground/40",
         ].join(" ")}
       />
     </div>
@@ -472,7 +470,6 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
                     <div className="flex">
                       <Button className="rounded-full" onClick={onFinish}>
                         Start adding pantry items
-                        <ChevronRight className="h-4 w-4 ml-1" />
                       </Button>
                     </div>
                   </div>
@@ -645,7 +642,6 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
                     onClick={back}
                     disabled={step === 1 || isSaving}
                   >
-                    <ChevronLeft className="h-4 w-4" />
                     Back
                   </Button>
 
@@ -659,7 +655,6 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
                     {step < totalSteps ? (
                       <Button type="button" className="rounded-full" onClick={next} disabled={isSaving}>
                         Continue
-                        <ChevronRight className="h-4 w-4 ml-1" />
                       </Button>
                     ) : (
                       <Button type="button" className="rounded-full" onClick={save} disabled={isSaving}>

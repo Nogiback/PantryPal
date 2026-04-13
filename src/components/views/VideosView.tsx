@@ -1,64 +1,33 @@
-
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { VideoIcon } from 'lucide-react';
-import { fetchVideos } from '@/store/slices/recipesSlice';
-import { VideoList } from '@/components/VideoList';
-import { VideoModal } from '@/components/VideoModal';
-import type { Video } from '@/types';
+import { motion } from "framer-motion";
+import { VideoIcon } from "lucide-react";
+import { useAppSelector } from "@/store/hooks";
 
 export function VideosView() {
-  const dispatch = useAppDispatch();
   const ingredients = useAppSelector((state) => state.ingredients.items);
-  const { videos, videoStatus } = useAppSelector((state) => state.recipes);
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-
-  useEffect(() => {
-    if (ingredients.length > 0) {
-      const ingredientNames = ingredients.map(i => i.name);
-      dispatch(fetchVideos(ingredientNames));
-    }
-  }, [ingredients, dispatch]);
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-6 h-full"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.45 }}
     >
       <div className="flex flex-col space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Recipe Videos</h2>
-        <p className="text-muted-foreground">Watch how to prepare matching dishes.</p>
+        <h2 className="page-title text-[#10120f]">Recipe videos</h2>
+        <p className="text-[rgba(16,18,15,0.62)]">
+          Video guidance will appear here once this section is connected to live recipe video results.
+        </p>
       </div>
 
-      <div className="h-full min-h-0">
-        {videos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border-2 border-dashed rounded-lg bg-muted/20 h-64 mt-8">
-            {videoStatus === 'loading' ? (
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-            ) : (
-                <VideoIcon className="h-12 w-12 mb-4 opacity-20" />
-            )}
-            <h3 className="text-lg font-semibold">No videos available</h3>
-            <p className="text-sm">Search for recipes in the "Find Recipes" tab to see related videos here.</p>
-          </div>
-        ) : (
-          <div className="pb-20">
-             <VideoList videos={videos} onVideoClick={setSelectedVideo} />
-          </div>
-        )}
+      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[24px] border border-[#e8eaec] bg-white px-8 py-12 text-center">
+        <VideoIcon className="h-12 w-12 text-[#00c755]" />
+        <h3 className="mt-5 text-lg font-medium text-[#10120f]">No videos available yet</h3>
+        <p className="mt-3 max-w-md text-sm leading-6 text-[rgba(16,18,15,0.58)]">
+          {ingredients.length > 0
+            ? "Your pantry is ready. Once video support is wired back in, matching cooking videos will appear here."
+            : "Add ingredients to Pantry Pal first, then this area can surface matching cooking videos later on."}
+        </p>
       </div>
-
-      {selectedVideo && (
-        <VideoModal
-          videoId={selectedVideo.youTubeId}
-          title={selectedVideo.title}
-          isOpen={!!selectedVideo}
-          onClose={() => setSelectedVideo(null)}
-        />
-      )}
     </motion.div>
   );
 }

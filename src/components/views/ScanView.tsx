@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, CheckCircle2, Trash2, Plus } from "lucide-react";
+import { Upload, CheckCircle2, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -368,7 +368,7 @@ export function ScanView() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur lg:col-span-5">
+        <Card className="rounded-3xl border-[#e8eaec] bg-white lg:col-span-5">
           <CardHeader>
             <CardTitle>Image Upload</CardTitle>
             <CardDescription>
@@ -395,7 +395,7 @@ export function ScanView() {
 
               {!previewUrl ? (
                 <div
-                  className="border border-border/60 rounded-2xl p-12 flex flex-col items-center justify-center space-y-4 hover:bg-muted/40 transition-colors cursor-pointer bg-background/40"
+                  className="flex cursor-pointer flex-col items-center justify-center space-y-4 rounded-2xl border border-[#e8eaec] bg-white p-12 transition-colors hover:bg-[#fcfcfc]"
                   onClick={() => !isScanning && fileInputRef.current?.click()}
                 >
                   <div className="bg-primary/10 p-4 rounded-full">
@@ -411,7 +411,7 @@ export function ScanView() {
               ) : (
                 <button
                   type="button"
-                  className="w-full rounded-2xl overflow-hidden border border-border/60 cursor-pointer bg-background/40"
+                  className="w-full cursor-pointer overflow-hidden rounded-2xl border border-[#e8eaec] bg-white"
                   onClick={() => !isScanning && fileInputRef.current?.click()}
                 >
                   <img
@@ -439,27 +439,21 @@ export function ScanView() {
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="grid w-full grid-cols-2 gap-2">
                 <Button
                   onClick={handleAnalyzeImage}
                   disabled={isScanning || !selectedFile}
-                  className="flex-1"
+                  className="h-10 w-full bg-[#00c755] text-[#10120f] hover:bg-[#00c755] hover:text-[#10120f] disabled:bg-[#00c755] disabled:text-[#10120f]"
                 >
-                  {isScanning ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Scanning...
-                    </>
-                  ) : (
-                    "Scan Image"
-                  )}
+                  {isScanning ? "Scanning..." : "Scan Image"}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={clearScan}
                   disabled={isScanning}
+                  className="h-10 w-full border-[#e8eaec] bg-white text-[#10120f] hover:bg-[#dce9dd] hover:text-[#10120f]"
                 >
-                  Reset
+                  Reset image
                 </Button>
               </div>
 
@@ -472,7 +466,7 @@ export function ScanView() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-border/60 bg-background/70 backdrop-blur lg:col-span-7">
+        <Card className="rounded-3xl border-[#e8eaec] bg-white lg:col-span-7">
           <CardHeader>
             <CardTitle>Extraction Result</CardTitle>
             <CardDescription>
@@ -489,7 +483,7 @@ export function ScanView() {
               )}
 
               {scannedItems.length === 0 ? (
-                <div className="border border-border/60 rounded-2xl py-12 text-center text-muted-foreground bg-muted/20">
+                <div className="rounded-2xl border border-border/60 bg-muted/20 py-12 text-center text-muted-foreground">
                   Scan an image to see editable extraction results here.
                 </div>
               ) : (
@@ -506,7 +500,7 @@ export function ScanView() {
                     {scannedItems.map((item) => (
                       <div
                         key={item.id}
-                        className="flex flex-col md:flex-row gap-3 items-start md:items-center rounded-xl border border-border/60 p-3 md:p-2 bg-background/40 shadow-sm md:shadow-none"
+                        className="flex flex-col items-start gap-3 rounded-xl border border-[#e8eaec] bg-white p-3 md:flex-row md:items-center md:p-2"
                       >
                         <div className="w-full md:flex-1 flex gap-2 items-center">
                           <span className="md:hidden text-xs font-semibold w-16 shrink-0 text-muted-foreground tracking-[0.04em]">Name</span>
@@ -516,7 +510,7 @@ export function ScanView() {
                               updateItem(item.id, "name", e.target.value)
                             }
                             placeholder="Item name"
-                            className="rounded-lg bg-background/60 flex-1"
+                            className="flex-1 rounded-lg bg-white"
                           />
                         </div>
                         <div className="grid grid-cols-2 md:flex gap-3 w-full md:w-auto items-center">
@@ -531,13 +525,13 @@ export function ScanView() {
                               type="number"
                               min="0"
                               step="any"
-                              className="rounded-lg bg-background/60"
+                              className="rounded-lg bg-white"
                             />
                           </div>
                           <div className="flex gap-2 items-center md:w-[90px]">
                             <span className="md:hidden text-xs font-semibold w-12 shrink-0 text-right pr-2 text-muted-foreground tracking-[0.04em]">Unit</span>
                             <Select value={item.unit} onValueChange={(val) => updateItem(item.id, "unit", val)}>
-                              <SelectTrigger className="w-full rounded-lg bg-background/60 h-10">
+                              <SelectTrigger className="h-10 w-full rounded-lg bg-white">
                                 <SelectValue placeholder="Unit" />
                               </SelectTrigger>
                               <SelectContent>
@@ -555,7 +549,7 @@ export function ScanView() {
                                 updateItem(item.id, "expiryDate", e.target.value)
                               }
                               type="date"
-                              className="rounded-lg bg-background/60 flex-1"
+                              className="flex-1 rounded-lg bg-white"
                               title="Expiry date"
                             />
                           </div>
@@ -592,7 +586,7 @@ export function ScanView() {
                     onClick={addManualItem}
                     className="w-full"
                   >
-                    <Plus className="h-4 w-4" /> Add Row
+                    Add Row
                   </Button>
 
                   <Button className="w-full" onClick={saveToPantry}>

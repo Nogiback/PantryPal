@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import pantryPalLogo from "../../SVGS/pantry-pal-logo.svg";
 
 type AppTab =
   | "dashboard"
@@ -80,7 +81,7 @@ function SidebarNavSection({
               <span className="dashboard-side-link__icon">{item.icon}</span>
               <span className="min-w-0 flex-1 text-left">
                 <span className="block truncate text-sm font-semibold">{item.label}</span>
-                <span className={cn("block truncate text-xs text-[rgba(232,234,236,0.66)]", isActive && "text-[#5f645c]")}>
+                <span className={cn("block truncate text-xs text-[rgba(232,234,236,0.66)]", isActive && "text-[rgba(16,18,15,0.62)]")}>
                   {item.caption}
                 </span>
               </span>
@@ -152,16 +153,16 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
         <button
           type="button"
           onClick={() => setIsUserMenuOpen((value) => !value)}
-          className="flex w-full items-center gap-3 rounded-full border border-[#e8eaec] bg-white px-3 py-2 text-left transition hover:bg-[#f8faf8]"
+          className="flex w-full items-center gap-3 rounded-full border border-[#e8eaec] bg-white px-3 py-2 text-left transition hover:bg-[#dce9dd]"
         >
           <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#dce9dd] text-sm font-medium text-[#10120f]">
             {initials}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium text-[#10120f]">{user.name || "Account"}</span>
-            <span className="block truncate text-xs text-[#8b9389]">{user.email || "Profile settings"}</span>
+            <span className="block truncate text-xs text-[rgba(16,18,15,0.48)]">{user.email || "Profile settings"}</span>
           </span>
-          <ChevronDown className={`h-4 w-4 shrink-0 text-[#8b9389] transition ${isUserMenuOpen ? "rotate-180" : ""}`} />
+          <ChevronDown className={`h-4 w-4 shrink-0 text-[rgba(16,18,15,0.48)] transition ${isUserMenuOpen ? "rotate-180" : ""}`} />
         </button>
 
         {isUserMenuOpen && (
@@ -173,7 +174,7 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
 	                  setIsUserMenuOpen(false);
 	                  onTabChange("profile");
 	                }}
-	                className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition hover:bg-[#f8faf8]"
+	                className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition hover:bg-[#dce9dd]"
 	              >
 	                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#dce9dd] text-[#10120f]">
 	                  <UserRound className="h-4 w-4" />
@@ -188,7 +189,7 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
                     setIsUserMenuOpen(false);
                     onSignOut();
                   }}
-                  className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition hover:bg-[#f8faf8]"
+                  className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition hover:bg-[#dce9dd]"
                 >
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#dce9dd] text-[#10120f]">
                     <LogOut className="h-4 w-4" />
@@ -206,7 +207,10 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
       </div>
 
       <div className="mt-auto px-4 pb-6 pt-12">
-        <span className="brand-pill">PP</span>
+        <div className="flex items-center gap-1.5 text-white">
+          <img src={pantryPalLogo} alt="Pantry Pal logo" className="block h-6 w-6 rounded-full object-contain" />
+          <span className="inline-flex items-center text-base font-bold leading-none tracking-[0.04em] text-white">Pantry Pal</span>
+        </div>
       </div>
     </div>
   );
@@ -226,7 +230,7 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
                       <Menu className="h-5 w-5" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-[310px] border-[rgba(232,234,236,0.14)] bg-[#10120f] p-0">
+                  <SheetContent side="left" className="w-[310px] border-[#e8eaec] bg-[#10120f] p-0">
                     {sidebarContent}
                   </SheetContent>
                 </Sheet>
@@ -245,7 +249,7 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e8eaec] bg-white text-[#10120f] shadow-[0_15px_35px_-24px_rgba(17,17,17,0.22)]"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e8eaec] bg-white text-[#10120f]"
                 >
                   <Bell className="h-4.5 w-4.5" />
                 </button>

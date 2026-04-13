@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Check, CheckCircle2, Circle, Copy, Trash2 } from "lucide-react";
+import { CalendarDays, CheckCircle2, Circle, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { removeRecipeFromPlan, setShoppingListText } from "@/store/slices/mealPlannerSlice";
 
@@ -76,8 +76,7 @@ export function MealPlannerView() {
           </p>
         </div>
         {plannedRecipes.length > 0 && (
-          <Button onClick={handleCopyShoppingList} className="bg-primary hover:bg-primary/90 rounded-full shadow-sm">
-            {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+          <Button onClick={handleCopyShoppingList} className="bg-primary hover:bg-primary rounded-full">
             {copied ? "Copied!" : "Copy Shopping List"}
           </Button>
         )}
@@ -89,9 +88,9 @@ export function MealPlannerView() {
             {/* Left Column: Planned Recipes */}
             <div className="lg:col-span-7 flex flex-col space-y-4">
               <h3 className="text-xl font-bold mb-2">Planned Meals ({plannedRecipes.length})</h3>
-              <div className="border rounded-2xl bg-background/50 p-4 min-h-[200px]">
+              <div className="min-h-[200px] rounded-2xl border border-[#e8eaec] bg-white p-4">
                 {plannedRecipes.length === 0 ? (
-                  <div className="h-48 flex flex-col items-center justify-center text-muted-foreground border border-border/60 rounded-xl m-2 bg-muted/20">
+                  <div className="m-2 flex h-48 flex-col items-center justify-center rounded-xl border border-border/60 bg-muted/20 text-muted-foreground">
                     <CalendarDays className="h-12 w-12 mb-4 opacity-20" />
                     <p className="font-semibold text-lg text-foreground">No meals planned yet.</p>
                     <p className="text-sm mt-1 max-w-sm text-center">Browse your recipes and click "Add to Plan" to start generating your shopping list.</p>
@@ -99,13 +98,13 @@ export function MealPlannerView() {
                 ) : (
                   <div className="space-y-4">
                     {plannedRecipes.map(recipe => (
-                      <Card key={recipe.id} className="overflow-hidden flex flex-col sm:flex-row">
+                      <Card key={recipe.id} className="flex flex-col overflow-hidden rounded-[24px] border-[#e8eaec] bg-white py-0 sm:flex-row">
                         {recipe.image ? (
-                          <div className="sm:w-36 h-32 sm:h-auto shrink-0 bg-muted">
+                          <div className="h-40 shrink-0 overflow-hidden bg-[#f6f7f8] sm:h-auto sm:w-44">
                             <img src={recipe.image} alt={recipe.title} className="w-full h-full object-cover" />
                           </div>
                         ) : (
-                          <div className="sm:w-36 h-32 sm:h-auto shrink-0 bg-primary/10 flex items-center justify-center">
+                          <div className="flex h-40 shrink-0 items-center justify-center bg-[#f6f7f8] sm:h-auto sm:w-44">
                             <CalendarDays className="h-10 w-10 text-primary/30" />
                           </div>
                         )}
@@ -137,9 +136,9 @@ export function MealPlannerView() {
             {/* Right Column: Ingredients Summary */}
             <div className="lg:col-span-5 flex flex-col space-y-4">
               <h3 className="text-xl font-bold mb-2">Shopping List</h3>
-              <div className="border rounded-2xl bg-background/50 p-4 min-h-[200px]">
+              <div className="min-h-[200px] rounded-2xl border border-[#e8eaec] bg-white p-4">
             {plannedRecipes.length === 0 ? (
-              <div className="h-full min-h-[300px] flex items-center justify-center text-muted-foreground opacity-50">
+              <div className="flex h-full min-h-[300px] items-center justify-center rounded-xl border border-border/60 bg-muted/20 text-muted-foreground opacity-50">
                 Plan a meal to see your list.
               </div>
             ) : (
@@ -150,13 +149,13 @@ export function MealPlannerView() {
                     <Circle className="h-4 w-4" /> To Buy ({missing.length})
                   </h4>
                   {missing.length === 0 ? (
-                    <p className="text-sm text-muted-foreground bg-orange-50/30 p-4 rounded-xl border border-orange-100/30 text-center">You have everything you need!</p>
+                    <p className="rounded-xl border border-[#e8eaec] bg-white p-4 text-center text-sm text-muted-foreground">You have everything you need!</p>
                   ) : (
                     <ul className="space-y-3">
                       {missing.map((item, idx) => (
-                        <li key={idx} className="flex flex-col gap-1 text-sm bg-orange-50 p-3 rounded-xl border border-orange-200/60">
-                          <span className="font-bold text-foreground capitalize">{item.name}</span>
-                          <span className="text-xs text-muted-foreground font-medium">{item.amounts}</span>
+                        <li key={idx} className="flex flex-col gap-1 rounded-xl border border-[#10120f] bg-[#10120f] p-3 text-sm">
+                          <span className="font-bold capitalize text-white">{item.name}</span>
+                          <span className="text-xs font-medium text-[rgba(255,255,255,0.62)]">{item.amounts}</span>
                         </li>
                       ))}
                     </ul>
@@ -173,12 +172,12 @@ export function MealPlannerView() {
                   ) : (
                     <ul className="space-y-3">
                       {have.map((item, idx) => (
-                        <li key={idx} className="flex flex-col gap-1 text-sm p-3 bg-green-50/50 rounded-xl border border-green-200/60 opacity-80">
+                        <li key={idx} className="flex flex-col gap-1 rounded-xl border border-[#10120f] bg-[#10120f] p-3 text-sm opacity-100">
                           <div className="flex justify-between items-start gap-2">
-                            <span className="font-bold text-foreground capitalize line-through">{item.name}</span>
+                            <span className="font-bold capitalize text-white line-through">{item.name}</span>
                             <span className="text-[10px] font-bold text-green-800 bg-green-200/70 px-2 py-0.5 rounded-sm">In Pantry</span>
                           </div>
-                          <span className="text-xs text-muted-foreground font-medium">{item.amounts}</span>
+                          <span className="text-xs font-medium text-[rgba(255,255,255,0.62)]">{item.amounts}</span>
                         </li>
                       ))}
                     </ul>
