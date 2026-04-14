@@ -107,8 +107,8 @@ export function RecipeDetailsSheet({ recipe, isOpen, onClose, isLoading }: Recip
                     <div className="flex flex-wrap gap-2">
                        {recipe.vegetarian && <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">Vegetarian</Badge>}
                        {recipe.vegan && <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">Vegan</Badge>}
-                       {recipe.glutenFree && <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50">Gluten Free</Badge>}
-                       {recipe.dairyFree && <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">Dairy Free</Badge>}
+                       {recipe.glutenFree && <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50">Gluten-Free</Badge>}
+                       {recipe.dairyFree && <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">Dairy-Free</Badge>}
                        {recipe.veryHealthy && <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50">Very Healthy</Badge>}
                        {recipe.cheap && <Badge variant="outline" className="border-yellow-200 text-yellow-700 bg-yellow-50">Cheap</Badge>}
                     </div>

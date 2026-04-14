@@ -125,7 +125,7 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
             <span className="brand-pill">
               <Heart className="h-4 w-4" />
             </span>
-            Pantry Pal
+            PantryPal
           </button>
           <button type="button" className="text-sm font-semibold text-[#10120f]" onClick={onGoToLogin}>
             Log in
@@ -146,14 +146,14 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
                 Let&apos;s get started
               </h1>
               <p className="mt-4 text-[0.96rem] text-[rgba(16,18,15,0.62)]">
-                Create your Pantry Pal account, then move directly into your pantry workspace.
+                Create your PantryPal account, then move directly into your pantry workspace.
               </p>
             </div>
 
             <form className="auth-form" onSubmit={handleSubmit}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="auth-label">
-                  First name
+                  First Name
                   <Input
                     className="auth-input"
                     placeholder="Your first name"
@@ -162,7 +162,7 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
                   />
                 </label>
                 <label className="auth-label">
-                  Last name
+                  Last Name
                   <Input
                     className="auth-input"
                     placeholder="Your last name"
@@ -173,12 +173,12 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
               </div>
 
               <label className="auth-label">
-                Household name
+                Household Name
                 <Input className="auth-input" placeholder="What should we call your kitchen?" />
               </label>
 
               <label className="auth-label">
-                Email address
+                Email Address
                 <Input
                   className="auth-input"
                   type="email"
@@ -205,7 +205,7 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
               </label>
 
               <label className="auth-label">
-                Confirm password
+                Confirm Password
                 <div className="relative">
                   <Input
                     className="auth-input pr-16"
@@ -223,7 +223,7 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
               <label className="auth-check auth-check-start">
                 <input type="checkbox" />
                 <span>
-                  I have read, understood and agree to Pantry Pal&apos;s{" "}
+                  I have read, understood and agree to PantryPal&apos;s{" "}
                   <button type="button" className="text-[#10120f] underline underline-offset-2">Privacy Policy</button>{" "}
                   and{" "}
                   <button type="button" className="text-[#10120f] underline underline-offset-2">Terms and Conditions</button>.
@@ -233,7 +233,7 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
               <label className="auth-check auth-check-start">
                 <input defaultChecked type="checkbox" />
                 <span>
-                  Join Pantry Pal updates for new features, kitchen planning tips, and helpful product news.
+                  Join PantryPal updates for new features, kitchen planning tips, and helpful product news.
                 </span>
               </label>
 
@@ -260,13 +260,13 @@ export function SignupView({ onBack, onSuccess, onGoToLogin }: SignupViewProps) 
             <div className="flex items-center justify-between gap-3 text-sm text-[rgba(16,18,15,0.62)]">
               <span>Already have an account?</span>
               <button type="button" className="font-semibold text-[#10120f]" onClick={onGoToLogin}>
-                Log in
+                Log In
               </button>
             </div>
 
             <div className="pt-3 text-center">
               <button type="button" className="text-sm font-medium text-[#10120f] underline underline-offset-4">
-                Why households are switching to Pantry Pal
+                Why households are switching to PantryPal
               </button>
             </div>
           </div>

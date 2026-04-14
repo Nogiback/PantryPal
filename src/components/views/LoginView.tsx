@@ -113,10 +113,10 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
             <span className="brand-pill">
               <Heart className="h-4 w-4" />
             </span>
-            Pantry Pal
+            PantryPal
           </button>
           <button type="button" className="text-sm font-semibold text-[#10120f]" onClick={onGoToSignup}>
-            Create account
+            Create Account
           </button>
         </div>
       </header>
@@ -131,10 +131,10 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
           <div className="auth-stack">
             <div>
               <h1 className="page-title text-[#10120f]">
-                Welcome back
+                Welcome Back
               </h1>
               <p className="mt-4 text-[0.96rem] text-[rgba(16,18,15,0.62)]">
-                Log in to access your Pantry Pal workspace and continue where you left off.
+                Log in to access your PantryPal workspace and continue where you left off.
               </p>
             </div>
 
@@ -195,15 +195,15 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
             </div>
 
             <div className="flex items-center justify-between gap-3 text-sm text-[rgba(16,18,15,0.62)]">
-              <span>New to Pantry Pal?</span>
+              <span>New to PantryPal?</span>
               <button type="button" className="font-semibold text-[#10120f]" onClick={onGoToSignup}>
-                Create an account
+                Create an Account
               </button>
             </div>
 
             <div className="pt-3 text-center">
               <button type="button" className="text-sm font-medium text-[#10120f] underline underline-offset-4">
-                See why home cooks choose Pantry Pal
+                See Why Home Cooks Choose PantryPal
               </button>
             </div>
           </div>

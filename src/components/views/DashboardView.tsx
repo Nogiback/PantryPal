@@ -19,7 +19,7 @@ const CHART_LABEL_Y = 318;
 const CHART_PRIMARY_GREEN = "#00c755";
 const CHART_SECONDARY_GREEN = "rgba(0, 199, 85, 0.34)";
 
-const pantryLabels = ["Expired", "1-7 days", "8-30 days", "31-90 days", "90+ days", "No date"];
+const pantryLabels = ["Expired", "1-7 days", "8-30 days", "31-90 days", "90+ days", "No Date"];
 const ingredientLabels = [
   "Produce",
   "Dairy & Eggs",
@@ -103,7 +103,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
   const pantrySeries = pantryLabels.map((label) => {
     return ingredients.filter((item) => {
-      if (!item.expiryDate) return label === "No date";
+      if (!item.expiryDate) return label === "No Date";
       const diffDays = (new Date(item.expiryDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
       if (label === "Expired") return diffDays < 0;
       if (label === "1-7 days") return diffDays >= 0 && diffDays <= 7;
@@ -150,9 +150,9 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         secondary: padChartSeries(recentIngredientSeries),
         hasSecondaryData: true,
         chip: `Top: ${topIngredientCategory}`,
-        legendPrimary: "All pantry",
-        legendSecondary: "Recent adds",
-        emptyTitle: "No ingredient data yet",
+        legendPrimary: "All Pantry",
+        legendSecondary: "Recent Adds",
+        emptyTitle: "No Ingredient Data Yet",
         emptyBody: "Add ingredients to your pantry and this chart will show which ingredient types are added most often.",
         hasData: hasPantryItems,
       };
@@ -164,10 +164,10 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
         primary: padChartSeries(planningBreakdown.map((item) => item.covered)),
         secondary: padChartSeries(planningBreakdown.map((item) => item.missing)),
         hasSecondaryData: true,
-        chip: `${plannedRecipes.length} planned`,
+        chip: `${plannedRecipes.length} Planned`,
         legendPrimary: "Covered",
         legendSecondary: "Missing",
-        emptyTitle: "No planned meals yet",
+        emptyTitle: "No Planned Meals Yet",
         emptyBody: "Add recipes to your meal plan and the dashboard will show how much of each meal is already covered by your pantry.",
         hasData: planningBreakdown.length > 0,
       };
@@ -178,10 +178,10 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
       primary: padChartSeries(pantrySeries),
       secondary: padChartSeries([]),
       hasSecondaryData: false,
-      chip: `${expiringSoon.length} use-soon`,
-      legendPrimary: "All pantry",
+      chip: `${expiringSoon.length} Expiring Soon`,
+      legendPrimary: "All Pantry",
       legendSecondary: "",
-      emptyTitle: "No pantry data yet",
+      emptyTitle: "No Pantry Data Yet",
       emptyBody: "Add ingredients to your pantry and this chart will show expiry health.",
       hasData: hasPantryItems,
     };
@@ -218,7 +218,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                   className={mode === "pantry" ? "font-semibold tracking-[-0.03em] text-[#10120f]" : "font-medium tracking-[-0.03em] text-[rgba(16,18,15,0.38)] transition hover:text-[#10120f]"}
                   onClick={() => setMode("pantry")}
                 >
-                  Pantry health
+                  Pantry Health
                 </button>
                 <button
                   type="button"
@@ -232,7 +232,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                   className={mode === "planning" ? "font-semibold tracking-[-0.03em] text-[#10120f]" : "font-medium tracking-[-0.03em] text-[rgba(16,18,15,0.38)] transition hover:text-[#10120f]"}
                   onClick={() => setMode("planning")}
                 >
-                  Weekly planning
+                  Weekly Planning
                 </button>
               </div>
 
@@ -253,7 +253,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                   )}
                 </div>
               ) : (
-                <p className="min-h-[40px] text-base font-medium leading-[40px] text-[rgba(16,18,15,0.48)] xl:text-right">No dashboard data yet</p>
+                <p className="min-h-[40px] text-base font-medium leading-[40px] text-[rgba(16,18,15,0.48)] xl:text-right">No Dashboard Data Yet</p>
               )}
             </div>
           </div>
@@ -261,18 +261,18 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
           <div className="mt-4">
             <div className="mb-4 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[22px] border border-[#e8eaec] bg-white px-4 py-4">
-                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[rgba(16,18,15,0.52)]">Total items</p>
+                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[rgba(16,18,15,0.52)]">Total Items</p>
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[#10120f]">{totalItems}</p>
               </div>
               <div className="rounded-[22px] border border-[#e8eaec] bg-white px-4 py-4">
-                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[rgba(16,18,15,0.52)]">Top category</p>
+                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[rgba(16,18,15,0.52)]">Top Category</p>
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[#10120f]">{topIngredientCount}</p>
-                <p className="mt-1 text-sm text-[rgba(16,18,15,0.58)]">{hasPantryItems ? topIngredientCategory : "No items yet"}</p>
+                <p className="mt-1 text-sm text-[rgba(16,18,15,0.58)]">{hasPantryItems ? topIngredientCategory : "No Items Yet"}</p>
               </div>
               <div className="rounded-[22px] border border-[#e8eaec] bg-white px-4 py-4">
-                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[rgba(16,18,15,0.52)]">Recent adds</p>
+                <p className="text-[0.78rem] font-semibold tracking-[0.04em] text-[rgba(16,18,15,0.52)]">Recent Adds</p>
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[#10120f]">{recentIngredientWindow.length}</p>
-                <p className="mt-1 text-sm text-[rgba(16,18,15,0.58)]">{hasPantryItems ? "Latest pantry entries" : "No recent additions"}</p>
+                <p className="mt-1 text-sm text-[rgba(16,18,15,0.58)]">{hasPantryItems ? "Latest Pantry Entries" : "No Recent Additions"}</p>
               </div>
             </div>
 
@@ -373,7 +373,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
       <section className="rounded-[34px] border border-[#e8eaec] bg-white px-6 py-6 sm:px-8 sm:py-7">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-[1.45rem] font-medium tracking-[-0.04em] text-[#10120f]">Items in pantry</h2>
+            <h2 className="text-[1.45rem] font-medium tracking-[-0.04em] text-[#10120f]">Items in Pantry</h2>
             <p className="mt-2 text-sm leading-6 text-[rgba(16,18,15,0.58)]">
               The 5 most recently added pantry items appear here automatically from your live pantry list.
             </p>
@@ -405,8 +405,8 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
               >
                 <span className="font-medium">{item.name}</span>
                 <span className="text-[rgba(16,18,15,0.62)]">{item.category || "Other"}</span>
-                <span>{[item.quantity, item.unit].filter(Boolean).join(" ") || "1 item"}</span>
-                <span className="text-[rgba(16,18,15,0.62)]">{item.expiryDate || "No date"}</span>
+                <span>{[item.quantity, item.unit].filter(Boolean).join(" ") || "1 Item"}</span>
+                <span className="text-[rgba(16,18,15,0.62)]">{item.expiryDate || "No Date"}</span>
               </div>
             ))
           ) : (

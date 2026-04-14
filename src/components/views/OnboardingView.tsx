@@ -16,36 +16,36 @@ import { fetchPreferences } from "@/store/slices/preferencesSlice";
 import { getAuthMode, getLocalPreferences, setLocalPreferences } from "@/lib/localAuth";
 
 type Diet =
-  | "No restrictions"
+  | "No Restrictions"
   | "Vegetarian"
   | "Vegan"
   | "Pescatarian"
   | "Keto"
   | "Halal"
-  | "Gluten-free";
+  | "Gluten-Free";
 
 type Flavor = "Spicy" | "Sweet" | "Savory" | "Tangy" | "Mild";
 
 const dietOptions: Diet[] = [
-  "No restrictions",
+  "No Restrictions",
   "Vegetarian",
   "Vegan",
   "Pescatarian",
   "Keto",
   "Halal",
-  "Gluten-free",
+  "Gluten-Free",
 ];
 
 const allergyOptions = ["Nuts", "Dairy", "Eggs", "Shellfish", "Soy", "Gluten"] as const;
 const flavorOptions: Flavor[] = ["Spicy", "Sweet", "Savory", "Tangy", "Mild"];
 
 const goalOptions = [
-  "Eat healthier",
-  "Lose weight",
-  "Gain muscle",
-  "Save money",
-  "Quick meals",
-  "Explore cuisines",
+  "Eat Healthier",
+  "Lose Weight",
+  "Gain Muscle",
+  "Save Money",
+  "Quick Meals",
+  "Explore Cuisines",
 ] as const;
 
 const progressPercent = (step: number, total: number) =>
@@ -69,7 +69,7 @@ type OnboardingPayload = {
 };
 
 const emptyOnboarding = (): OnboardingPayload => ({
-  dietaryPreference: "No restrictions",
+  dietaryPreference: "No Restrictions",
   allergies: [],
   customAvoid: [],
   taste: { flavors: [], spiceLevel: 2 },
@@ -183,7 +183,7 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [dietaryPreference, setDietaryPreference] = useState<Diet>("No restrictions");
+  const [dietaryPreference, setDietaryPreference] = useState<Diet>("No Restrictions");
   const [allergies, setAllergies] = useState<string[]>([]);
   const [customAvoid, setCustomAvoid] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
@@ -407,7 +407,7 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
                         <CheckCircle2 className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-lg">Onboarding completed</p>
+                        <p className="font-semibold text-lg">Onboarding Completed</p>
                         <p className="text-sm text-muted-foreground">
                           Recipes will be suggested based on your diet, allergies, tastes, and goals.
                         </p>
@@ -499,9 +499,9 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
                         {step === 2 && (
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <p className="text-sm font-semibold">Select what to avoid</p>
+                              <p className="text-sm font-semibold">Select What to Avoid</p>
                               <Badge variant="secondary" className="rounded-full">
-                                {allergies.length + customAvoid.length} selected
+                                {allergies.length + customAvoid.length} Selected
                               </Badge>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -584,7 +584,7 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
 
                           <div className="rounded-2xl border border-border/60 bg-background/50 p-4">
                             <div className="flex items-center justify-between">
-                              <p className="text-sm font-semibold">Spice level</p>
+                              <p className="text-sm font-semibold">Spice Level</p>
                               <Badge variant="outline" className="rounded-full">
                                 {["Mild", "Medium", "Hot", "Very hot", "Fire"][spiceLevel]}
                               </Badge>
@@ -599,7 +599,7 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
                             />
                             <div className="mt-2 flex justify-between text-xs text-muted-foreground">
                               <span>Mild 🙂</span>
-                              <span>Very spicy 🔥</span>
+                              <span>Very Spicy 🔥</span>
                             </div>
                           </div>
                         </div>

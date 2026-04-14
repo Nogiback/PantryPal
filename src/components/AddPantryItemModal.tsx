@@ -54,7 +54,7 @@ export function AddPantryItemModal({ isOpen, onClose }: AddPantryItemModalProps)
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="item-name">Item name</Label>
+            <Label htmlFor="item-name">Item Name</Label>
             <Input
               id="item-name"
               placeholder="e.g. Roma Tomato"
@@ -96,7 +96,7 @@ export function AddPantryItemModal({ isOpen, onClose }: AddPantryItemModalProps)
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="expiry-date">Expiry date (optional)</Label>
+            <Label htmlFor="expiry-date">Expiry Date (optional)</Label>
             <Input
               id="expiry-date"
               type="date"
@@ -125,7 +125,7 @@ export function AddPantryItemModal({ isOpen, onClose }: AddPantryItemModalProps)
               onChange={(e) => setInFreezer(e.target.checked)}
               className="w-4 h-4 rounded text-primary focus:ring-primary accent-primary"
             />
-            <Label htmlFor="inFreezer" className="font-normal">Item is in the freezer</Label>
+            <Label htmlFor="inFreezer" className="font-normal">In Freezer</Label>
           </div>
         </div>
         

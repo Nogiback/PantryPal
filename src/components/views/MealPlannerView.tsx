@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, CheckCircle2, Circle, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { removeRecipeFromPlan, setShoppingListText } from "@/store/slices/mealPlannerSlice";
+import { removeRecipeFromPlan, setShoppingListText, clearPlan } from "@/store/slices/mealPlannerSlice";
 
 export function MealPlannerView() {
   const dispatch = useAppDispatch();
@@ -76,9 +76,14 @@ export function MealPlannerView() {
           </p>
         </div>
         {plannedRecipes.length > 0 && (
-          <Button onClick={handleCopyShoppingList} className="bg-primary hover:bg-primary rounded-full">
-            {copied ? "Copied!" : "Copy Shopping List"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => dispatch(clearPlan())} className="rounded-full">
+              Reset Plan
+            </Button>
+            <Button onClick={handleCopyShoppingList} className="bg-primary hover:bg-primary rounded-full border-0 text-[#10120f]">
+              {copied ? "Copied!" : "Copy Shopping List"}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -123,7 +128,7 @@ export function MealPlannerView() {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mt-4 font-medium">
-                            {recipe.requiredIngredients.length} ingredients checked
+                            {recipe.requiredIngredients.length} Ingredients Checked
                           </p>
                         </div>
                       </Card>

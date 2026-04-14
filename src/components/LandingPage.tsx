@@ -13,17 +13,17 @@ const HEADLINE_WORDS = ["pantry", "recipes", "planning", "routine"];
 
 const TOOLKIT = [
   {
-    title: "Set up fast",
+    title: "Set Up Fast",
     icon: "spark",
     text: "Add staple items, scan what is already in the kitchen, and build a usable pantry list in minutes.",
   },
   {
-    title: "Plan with clarity",
+    title: "Plan with Clarity",
     icon: "calendar",
     text: "Turn ingredients, recipes, and grocery needs into a weekly plan that feels calm instead of chaotic.",
   },
   {
-    title: "Cook with confidence",
+    title: "Cook with Confidence",
     icon: "message",
     text: "Get practical recipe ideas based on what is on hand so fewer ingredients go unused at the back of the shelf.",
   },
@@ -31,22 +31,22 @@ const TOOLKIT = [
 
 const FEATURES = [
   {
-    title: "Pantry tracking",
+    title: "Pantry Tracking",
     icon: "fridge",
     text: "Keep ingredients, quantities, and expiry dates in one simple view.",
   },
   {
-    title: "Recipe matching",
+    title: "Recipe Matching",
     icon: "recipe",
     text: "Turn what is already at home into recipe suggestions people can actually use.",
   },
   {
-    title: "Meal plans",
+    title: "Meal Plans",
     icon: "calendar",
     text: "Map breakfast, lunch, dinner, and prep in one weekly routine.",
   },
   {
-    title: "Household sharing",
+    title: "Household Sharing",
     icon: "users",
     text: "Let families and roommates keep lists and pantry updates aligned.",
   },
@@ -54,22 +54,22 @@ const FEATURES = [
 
 const INTEGRATIONS = [
   {
-    title: "Meal planning",
+    title: "Meal Planning",
     icon: "calendar",
     text: "Build a weekly plan around what is already in your kitchen so meals, prep, and grocery decisions stay easy to follow.",
   },
   {
-    title: "Receipt import",
+    title: "Receipt Import",
     icon: "receipt",
-    text: "Pull recent grocery purchases into Pantry Pal so your inventory stays current after every shop.",
+    text: "Pull recent grocery purchases into PantryPal so your inventory stays current after every shop.",
   },
   {
-    title: "Shopping list sync",
+    title: "Shopping List Sync",
     icon: "cart",
     text: "Keep shared shopping lists in one place so everyone in the household knows what still needs to be picked up.",
   },
   {
-    title: "Calendar reminders",
+    title: "Calendar Reminders",
     icon: "clock",
     text: "Stay on track with prep reminders, grocery days, and meal-plan prompts throughout the week.",
   },
@@ -77,17 +77,17 @@ const INTEGRATIONS = [
 
 const RESOURCES = [
   {
-    title: "Pantry organization guide",
+    title: "Pantry Organization Guide",
     icon: "book",
     text: "Learn how to organize staples, reduce duplicate purchases, and keep ingredients easier to use.",
   },
   {
-    title: "Weekly meal planning tips",
+    title: "Weekly Meal Planning Tips",
     icon: "clipboard",
     text: "Build a simple routine for breakfast, lunch, dinner, and leftovers without overplanning your week.",
   },
   {
-    title: "Getting started with Pantry Pal",
+    title: "Getting Started with PantryPal",
     icon: "download",
     text: "See how to set up your pantry, invite your household, and start getting smarter recipe suggestions right away.",
   },
@@ -95,17 +95,17 @@ const RESOURCES = [
 
 const FAQS = [
   {
-    question: "What can I do with Pantry Pal?",
+    question: "What can I do with PantryPal?",
     answer:
-      "Pantry Pal helps you track ingredients, plan meals, build grocery lists, and find recipes based on what you already have at home.",
+      "PantryPal helps you track ingredients, plan meals, build grocery lists, and find recipes based on what you already have at home.",
   },
   {
-    question: "Can I use Pantry Pal with my family or roommates?",
+    question: "Can I use PantryPal with my family or roommates?",
     answer:
       "Yes. Pantry updates, shopping lists, and meal plans are designed to be easier to manage across a shared household.",
   },
   {
-    question: "How does Pantry Pal help reduce food waste?",
+    question: "How does PantryPal help reduce food waste?",
     answer:
       "By showing what is already available, surfacing ingredients nearing expiry, and suggesting recipes that use them before they are forgotten.",
   },
@@ -114,7 +114,7 @@ const FAQS = [
 const TESTIMONIALS = [
   {
     quote:
-      "Pantry Pal helps me plan meals around what I already have, and that alone has made grocery shopping feel calmer and much more intentional.",
+      "PantryPal helps me plan meals around what I already have, and that alone has made grocery shopping feel calmer and much more intentional.",
     author: "Jenny Chan",
     company: "Student",
     image:
@@ -124,7 +124,7 @@ const TESTIMONIALS = [
     quote:
       "I love that it turns pantry ingredients into actual dinner ideas. It feels practical, clear, and built around how people really cook at home.",
     author: "Jordan Mensah",
-    company: "Working professional",
+    company: "Working Professional",
     image:
       "https://images.pexels.com/photos/7428657/pexels-photo-7428657.jpeg?cs=srgb&dl=pexels-august-de-richelieu-7428657.jpg&fm=jpg",
   },
@@ -132,13 +132,13 @@ const TESTIMONIALS = [
     quote:
       "The weekly planning flow makes it easier to waste less food and still know what everyone in the house can eat during the week.",
     author: "Gillian Roberts",
-    company: "Content creator",
+    company: "Content Creator",
     image:
       "https://images.pexels.com/photos/6593585/pexels-photo-6593585.jpeg?cs=srgb&dl=pexels-shvetsa-6593585.jpg&fm=jpg",
   },
   {
     quote:
-      "I like trying dishes from different cultures, and Pantry Pal makes it easier to turn what I already have into something new, exciting, and worth sharing.",
+      "I like trying dishes from different cultures, and PantryPal makes it easier to turn what I already have into something new, exciting, and worth sharing.",
     author: "Vineeth Kaur",
     company: "Foodie",
     image:
@@ -405,8 +405,8 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
             onClick={() => scrollToId("top")}
             className="flex items-center gap-1.5 text-base font-bold tracking-[0.04em] text-[#10120f]"
           >
-            <img src={pantryPalLogo} alt="Pantry Pal logo" className="block h-6 w-6 rounded-full object-contain" />
-            <span className="inline-flex items-center leading-none">Pantry Pal</span>
+            <img src={pantryPalLogo} alt="PantryPal logo" className="block h-6 w-6 rounded-full object-contain" />
+            <span className="inline-flex items-center leading-none">PantryPal</span>
           </button>
 
           <button
@@ -437,7 +437,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
               .
             </h1>
             <p className="mt-6 max-w-lg text-lg leading-8 text-[#5f645c]">
-              Pantry Pal keeps your pantry, recipes, grocery lists, and weekly meal plans in sync so cooking at home feels easier every day.
+              PantryPal keeps your pantry, recipes, grocery lists, and weekly meal plans in sync so cooking at home feels easier every day.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -446,14 +446,14 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
                 onClick={onSignUp}
                 className="inline-flex items-center justify-center rounded-full bg-[#10120f] px-6 py-3.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:text-white sm:min-w-[210px]"
               >
-                Join now
+                Join Now
               </button>
               <button
                 type="button"
                 onClick={onLogin}
                 className="inline-flex items-center justify-center rounded-full border border-[#e8eaec] bg-white px-6 py-3.5 text-sm font-semibold text-[#32352f] transition hover:border-[#10120f] sm:min-w-[210px]"
               >
-                Explore features
+                Explore Features
               </button>
             </div>
           </div>
@@ -463,7 +463,6 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
               <video
                 className="block aspect-[5/4] w-full object-cover lg:aspect-square"
                 autoPlay
-                controls
                 loop
                 muted
                 playsInline
@@ -481,7 +480,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
             A kitchen companion built for real weekly routines.
           </h2>
           <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-[#5f645c]">
-            Pantry Pal helps households stay on top of ingredients, grocery trips, and dinner decisions without adding more friction to the week.
+            PantryPal helps households stay on top of ingredients, grocery trips, and dinner decisions without adding more friction to the week.
           </p>
 
           <div className="mt-10 grid gap-4 lg:grid-cols-3">
@@ -526,7 +525,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
             <div className="flex h-full min-h-[560px] flex-col rounded-[30px] border border-white/10 bg-white/4 p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold tracking-[0.04em] text-white/45">Pantry Pal dashboard</p>
+                  <p className="text-xs font-semibold tracking-[0.04em] text-white/45">PantryPal Dashboard</p>
                   <h3 className="mt-3 max-w-xl text-3xl font-semibold tracking-[-0.05em]">
                     See your pantry, recipes, and plan for the week from one clear home base.
                   </h3>
@@ -537,12 +536,12 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
               <div className="mt-8 flex flex-1">
                 <div className="w-full overflow-hidden rounded-[28px] border border-white/14 bg-white/3">
                   <div className="border-b border-white/10 px-5 py-3 text-sm text-white/55">
-                    Pantry overview
+                    Pantry Overview
                   </div>
                   <div className="bg-white p-0">
                     <img
                       src={dashboardPreview}
-                      alt="Pantry Pal dashboard preview"
+                      alt="PantryPal dashboard preview"
                       className="block w-full h-auto"
                     />
                   </div>
@@ -611,7 +610,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
         </FadeIn>
 
         <FadeIn className="text-center">
-          <p className="lp-eyebrow justify-center">Integrations that matter</p>
+          <p className="lp-eyebrow justify-center">Integrations That Matter</p>
           <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-[#10120f] sm:text-5xl">
             Helpful connections for the way people already shop.
           </h2>
@@ -637,18 +636,18 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
               Guidance that makes daily cooking easier.
             </h2>
             <p className="mt-5 max-w-xl text-lg leading-8 text-white/72">
-              Pantry Pal is designed to feel useful from day one, with simple setup, shared-household tools, and recipe guidance that stays practical.
+              PantryPal is designed to feel useful from day one, with simple setup, shared-household tools, and recipe guidance that stays practical.
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                <p className="text-xs font-semibold tracking-[0.04em] text-white/45">Easy onboarding</p>
+                <p className="text-xs font-semibold tracking-[0.04em] text-white/45">Easy Onboarding</p>
                 <p className="mt-3 text-base leading-7 text-white/72">
                   Get started with pantry setup, category organization, and list sharing without a steep learning curve.
                 </p>
               </div>
               <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
-                <p className="text-xs font-semibold tracking-[0.04em] text-white/45">Smarter suggestions</p>
+                <p className="text-xs font-semibold tracking-[0.04em] text-white/45">Smarter Suggestions</p>
                 <p className="mt-3 text-base leading-7 text-white/72">
                   Get recipe ideas and planning prompts that reflect what your household can actually cook this week.
                 </p>
@@ -660,9 +659,9 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
             <div className="flex h-full min-h-[430px] flex-col justify-between rounded-[30px] bg-[#dce9dd] p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold tracking-[0.04em] text-[#7d8277]">Household-friendly design</p>
+                  <p className="text-xs font-semibold tracking-[0.04em] text-[#7d8277]">Household-Friendly Design</p>
                   <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[#10120f]">
-                    Pantry Pal keeps shared kitchens more organized with simple views everyone can understand.
+                    PantryPal keeps shared kitchens more organized with simple views everyone can understand.
                   </p>
                 </div>
                 <PlaceholderIcon icon="image" />
@@ -704,7 +703,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
           </FadeIn>
 
           <FadeIn id="faq" delay={0.08} className="rounded-[36px] bg-[#10120f] p-8 text-white">
-            <p className="lp-eyebrow text-[#d7dbd1]">Common questions</p>
+            <p className="lp-eyebrow text-[#d7dbd1]">Common Questions</p>
             <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-white sm:text-5xl">
               Answers for people getting started.
             </h2>
@@ -723,7 +722,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
         <FadeIn id="cta" className="rounded-[40px] bg-[#10120f] px-6 py-14 text-center text-white sm:px-10">
           <p className="lp-eyebrow justify-center text-[#d7dbd1]">Get started with ease</p>
           <h2 className="display-font mx-auto mt-4 max-w-4xl text-4xl tracking-[-0.06em] text-white sm:text-5xl lg:text-6xl">
-            Bring more calm to your kitchen with Pantry Pal.
+            Bring more calm to your kitchen with PantryPal.
           </h2>
           <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-white/72">
             Keep ingredients visible, make meal planning simpler, and give your household one place to stay organized through the week.
@@ -735,14 +734,14 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
               onClick={onSignUp}
               className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-[#10120f] transition hover:-translate-y-0.5"
             >
-              Join the waitlist
+              Join the Waitlist
             </button>
             <button
               type="button"
               onClick={onLogin}
               className="inline-flex items-center justify-center rounded-full border border-white/14 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition hover:border-white/30 hover:text-white"
             >
-              Explore features
+              Explore Features
             </button>
           </div>
         </FadeIn>
@@ -756,8 +755,8 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
             onClick={() => scrollToId("top")}
             className="flex items-center gap-1.5 text-left text-base font-bold tracking-[0.04em] text-white"
           >
-            <img src={pantryPalLogo} alt="Pantry Pal logo" className="block h-6 w-6 rounded-full object-contain" />
-            <span className="inline-flex items-center leading-none">Pantry Pal</span>
+            <img src={pantryPalLogo} alt="PantryPal logo" className="block h-6 w-6 rounded-full object-contain" />
+            <span className="inline-flex items-center leading-none">PantryPal</span>
           </button>
 
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium text-white/72">

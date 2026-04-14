@@ -44,8 +44,8 @@ const primaryNav: NavItem[] = [
 const planningNav: NavItem[] = [
   { label: "Recipes", caption: "Matches", icon: <ChefHat className="h-4 w-4" />, id: "recipes" },
   { label: "AI Chef", caption: "Suggestions", icon: <Sparkles className="h-4 w-4" />, id: "ai-recipes" },
-  { label: "Meal Planner", caption: "This week", icon: <CalendarDays className="h-4 w-4" />, id: "meal-planner" },
-  { label: "Favourites", caption: "Saved recipes", icon: <Heart className="h-4 w-4" />, id: "favourites" },
+  { label: "Meal Planner", caption: "This Week", icon: <CalendarDays className="h-4 w-4" />, id: "meal-planner" },
+  { label: "Favourites", caption: "Saved Recipes", icon: <Heart className="h-4 w-4" />, id: "favourites" },
 ];
 
 const sidebarNav = [...primaryNav, ...planningNav];
@@ -194,7 +194,7 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#dce9dd] text-[#10120f]">
                     <LogOut className="h-4 w-4" />
                   </span>
-                  <span className="text-sm font-medium text-[#10120f]">Sign out</span>
+                  <span className="text-sm font-medium text-[#10120f]">Sign Out</span>
                 </button>
               )}
             </div>
@@ -208,8 +208,8 @@ export function Layout({ children, activeTab, onTabChange, onSignOut }: LayoutPr
 
       <div className="mt-auto px-4 pb-6 pt-12">
         <div className="flex items-center gap-1.5 text-white">
-          <img src={pantryPalLogo} alt="Pantry Pal logo" className="block h-6 w-6 rounded-full object-contain" />
-          <span className="inline-flex items-center text-base font-bold leading-none tracking-[0.04em] text-white">Pantry Pal</span>
+          <img src={pantryPalLogo} alt="PantryPal logo" className="block h-6 w-6 rounded-full object-contain" />
+          <span className="inline-flex items-center text-base font-bold leading-none tracking-[0.04em] text-white">PantryPal</span>
         </div>
       </div>
     </div>

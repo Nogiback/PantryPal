@@ -38,7 +38,7 @@ export function FavoritesView() {
                 <Heart className="h-4 w-4 text-destructive" fill="currentColor" />
                 Favourites
               </CardTitle>
-              <CardDescription>Your saved Spoonacular recipes.</CardDescription>
+              <CardDescription>Your Saved Recipes.</CardDescription>
             </div>
           </div>
         </CardHeader>

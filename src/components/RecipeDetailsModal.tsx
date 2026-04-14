@@ -80,7 +80,7 @@ export function RecipeDetailsModal({
           <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center h-full">
             <Info className="h-16 w-16 mb-6 opacity-20 text-primary" />
             <h3 className="text-2xl font-bold text-foreground mb-2">
-              Recipe details unavailable
+              Recipe details unavailable.
             </h3>
             <p className="max-w-xs mb-8">
               We couldn't retrieve the details for this dish right now.

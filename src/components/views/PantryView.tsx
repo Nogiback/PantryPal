@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MoreHorizontal, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,7 +24,7 @@ const CATEGORY_CARDS = [
   { label: "Condiments", category: "Condiments & Oils" },
   { label: "Dairy", category: "Dairy & Eggs" },
   { label: "Meat", category: "Meat & Poultry" },
-  { label: "Herbs", category: "Spices & Herbs" },
+  { label: "Herbs & Spices", category: "Spices & Herbs" },
   { label: "Seafood", category: "Seafood" },
   { label: "Other", category: "Other" },
 ] as const;
@@ -52,7 +52,7 @@ const getDaysUntilExpiry = (expiryDate?: string) => {
 
 const getExpiryLabel = (expiryDate?: string) => {
   const daysLeft = getDaysUntilExpiry(expiryDate);
-  if (daysLeft === null) return "No date";
+  if (daysLeft === null) return "No Date";
   if (daysLeft < 0) return "Expired";
   if (daysLeft === 0) return "Today";
   if (daysLeft === 1) return "in 1 day";
@@ -79,7 +79,7 @@ const getProgressColor = (item: Ingredient) => {
 
 const getQuantityLabel = (item: Ingredient) => {
   const parts = [item.quantity, item.unit].filter(Boolean);
-  return parts.length > 0 ? parts.join(" ") : "1 item";
+  return parts.length > 0 ? parts.join(" ") : "1 Item";
 };
 
 const getItemCategory = (item: Ingredient) => {
@@ -91,6 +91,11 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Ingredient | null>(null);
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [showingAllItemsFor, setShowingAllItemsFor] = useState<Record<string, boolean>>({});
+
+  const toggleCategoryCollapse = (category: string) => setCollapsedCategories(prev => ({ ...prev, [category]: !prev[category] }));
+  const toggleShowAllItems = (category: string) => setShowingAllItemsFor(prev => ({ ...prev, [category]: !prev[category] }));
 
   const ingredients = useAppSelector((state) => state.ingredients.items);
   const saveStatus = useAppSelector((state) => state.ingredients.saveStatus);
@@ -145,11 +150,14 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
 
   const categorySections = useMemo(
     () =>
-      CATEGORY_CARDS.map((section) => ({
-        ...section,
-        items: ingredients.filter((item) => getItemCategory(item) === section.category).slice(0, ITEM_LIMIT),
-        totalCount: ingredients.filter((item) => getItemCategory(item) === section.category).length,
-      })),
+      CATEGORY_CARDS.map((section) => {
+        const items = ingredients.filter((item) => getItemCategory(item) === section.category);
+        return {
+          ...section,
+          items,
+          totalCount: items.length,
+        };
+      }),
     [ingredients],
   );
 
@@ -178,10 +186,10 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
         transition={{ duration: 0.45 }}
       >
         <div>
-          <h2 className="page-title text-[#10120f]">Pantry items</h2>
+          <h2 className="page-title text-[#10120f]">Pantry Items</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[rgba(16,18,15,0.58)]">
             Track what is in every shelf and drawer.
-            {saveStatus === "loading" ? " Saving your pantry changes..." : ""}
+            {saveStatus === "loading" ? "Saving your pantry changes..." : ""}
           </p>
         </div>
 
@@ -192,91 +200,122 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
         )}
 
         <div className="grid grid-cols-1 gap-5">
-          {categorySections.map((section) => (
+          {categorySections.map((section) => {
+            const isCollapsed = collapsedCategories[section.category] || false;
+            const isShowingAll = showingAllItemsFor[section.category] || false;
+            const visibleItems = isShowingAll ? section.items : section.items.slice(0, ITEM_LIMIT);
+            const hasMoreItems = section.totalCount > ITEM_LIMIT;
+
+            return (
             <section
               key={section.category}
               className="overflow-hidden rounded-[22px] bg-[#fcfcfc] ring-1 ring-inset ring-[#e8eaec]"
             >
-              <div className="border-b border-[#e8eaec] px-8 py-7 sm:px-9">
-                <div className="flex items-center justify-between gap-4">
+              <button 
+                className={`w-full px-8 py-6 sm:px-9 hover:bg-black/[0.02] transition-colors flex items-center justify-between text-left ${!isCollapsed ? 'border-b border-[#e8eaec]' : ''}`}
+                onClick={() => toggleCategoryCollapse(section.category)}
+              >
                   <div>
                     <h3 className="text-[1.08rem] font-semibold tracking-[-0.04em] text-[#10120f]">{section.label}</h3>
-                    <p className="mt-2 text-[0.92rem] text-[rgba(16,18,15,0.52)]">
+                    <p className="mt-1.5 text-[0.92rem] text-[rgba(16,18,15,0.52)]">
                       {section.totalCount === 0
                         ? "No items added yet."
                         : `${section.totalCount} ${section.totalCount === 1 ? "item" : "items"} in this category`}
                     </p>
                   </div>
-                </div>
+                  <div className="grid h-10 w-10 place-items-center rounded-full bg-white ring-1 ring-[#e8eaec] text-[rgba(16,18,15,0.48)] shadow-xs transition-colors hover:bg-[#dce9dd] hover:text-[#10120f]">
+                    {isCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                  </div>
+              </button>
 
-                <div className={`mt-8 grid ${PANTRY_TABLE_GRID} items-center gap-4 text-[0.78rem] font-medium tracking-[0.04em] text-[rgba(16,18,15,0.48)]`}>
-                  <span className="justify-self-start">Number</span>
-                  <span className="justify-self-start">Items</span>
-                  <span className="justify-self-start">Quantity</span>
-                  <span className="justify-self-start">Expires</span>
-                  <span className="justify-self-center"> </span>
-                </div>
-              </div>
-
-              <div className="divide-y divide-[#e8eaec]">
-                {section.items.length > 0 ? (
-                  section.items.map((item, index) => {
-                    const progress = getExpiryProgress(item);
-                    const progressColor = getProgressColor(item);
-                    return (
-                      <div
-                        key={item.id}
-                        className={`grid ${PANTRY_TABLE_GRID} items-center gap-4 px-8 py-4 sm:px-9`}
-                      >
-                        <span className="justify-self-start text-[0.9rem] font-medium text-[rgba(16,18,15,0.52)]">
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-
-                        <div className="flex min-w-0 items-center gap-4 pl-2">
-                          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#00c755] text-[1rem] font-semibold text-white">
-                            {item.name.trim().charAt(0).toUpperCase() || "P"}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="truncate text-[0.92rem] font-normal text-[#10120f]">{item.name}</p>
-                            {item.notes ? <p className="truncate text-[0.82rem] text-[rgba(16,18,15,0.48)]">{item.notes}</p> : null}
-                          </div>
-                        </div>
-
-                        <p className="justify-self-start text-[0.92rem] font-normal text-[rgba(16,18,15,0.82)]">{getQuantityLabel(item)}</p>
-
-                        <div className="flex min-w-0 items-center gap-3 justify-self-start">
-                          <div className="h-[5px] w-full min-w-[140px] max-w-[180px] overflow-hidden rounded-full bg-[#e8eaec]">
-                            <div
-                              className="h-full rounded-full transition-all duration-300"
-                              style={{ width: `${progress}%`, backgroundColor: progressColor }}
-                            />
-                          </div>
-                          <span className="min-w-[84px] text-left text-[0.92rem] font-normal text-[rgba(16,18,15,0.62)]">
-                            {getExpiryLabel(item.expiryDate)}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="grid h-8 w-8 justify-self-center place-items-center rounded-full text-[rgba(16,18,15,0.34)] transition hover:bg-[#dce9dd] hover:text-[#10120f]"
-                          onClick={() => setSelectedItem(item)}
-                          aria-label={`Open actions for ${item.name}`}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
+              <AnimatePresence>
+                {!isCollapsed && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    {section.totalCount > 0 && (
+                      <div className={`bg-black/[0.01] px-8 py-3 sm:px-9 grid ${PANTRY_TABLE_GRID} items-center gap-4 text-[0.78rem] font-medium tracking-[0.04em] text-[rgba(16,18,15,0.48)] border-b border-[#e8eaec]`}>
+                        <span className="justify-self-start">Number</span>
+                        <span className="justify-self-start">Items</span>
+                        <span className="justify-self-start">Quantity</span>
+                        <span className="justify-self-start">Expires</span>
+                        <span className="justify-self-center"> </span>
                       </div>
-                    );
-                  })
-                ) : null}
-              </div>
- 
-              {section.totalCount > ITEM_LIMIT ? (
-                <div className="border-t border-[#e8eaec] px-8 py-4 text-sm text-[rgba(16,18,15,0.48)] sm:px-9">
-                  Showing the first {ITEM_LIMIT} items. Add filters or remove items to see more clearly.
-                </div>
-              ) : null}
+                    )}
+
+                    <div className="divide-y divide-[#e8eaec]">
+                      {visibleItems.length > 0 ? (
+                        visibleItems.map((item, index) => {
+                          const progress = getExpiryProgress(item);
+                          const progressColor = getProgressColor(item);
+                          return (
+                            <div
+                              key={item.id}
+                              className={`grid ${PANTRY_TABLE_GRID} items-center gap-4 px-8 py-4 sm:px-9 hover:bg-black/[0.01] transition-colors`}
+                            >
+                              <span className="justify-self-start text-[0.9rem] font-medium text-[rgba(16,18,15,0.52)]">
+                                {String(index + 1).padStart(2, "0")}
+                              </span>
+
+                              <div className="flex min-w-0 items-center gap-4 pl-2">
+                                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#00c755] text-[1rem] font-semibold text-white">
+                                  {item.name.trim().charAt(0).toUpperCase() || "P"}
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="truncate text-[0.92rem] font-normal text-[#10120f] capitalize">{item.name}</p>
+                                  {item.notes ? <p className="truncate text-[0.82rem] text-[rgba(16,18,15,0.48)] mt-0.5">{item.notes}</p> : null}
+                                </div>
+                              </div>
+
+                              <p className="justify-self-start text-[0.92rem] font-normal text-[rgba(16,18,15,0.82)] capitalize">{getQuantityLabel(item)}</p>
+
+                              <div className="flex min-w-0 items-center gap-3 justify-self-start">
+                                <div className="h-[5px] w-full min-w-[140px] max-w-[180px] overflow-hidden rounded-full bg-[#e8eaec]">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-300"
+                                    style={{ width: `${progress}%`, backgroundColor: progressColor }}
+                                  />
+                                </div>
+                                <span className="min-w-[84px] text-left text-[0.92rem] font-normal text-[rgba(16,18,15,0.62)]">
+                                  {getExpiryLabel(item.expiryDate)}
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                className="grid h-8 w-8 justify-self-center place-items-center rounded-full text-[rgba(16,18,15,0.34)] transition hover:bg-black/[0.05] hover:text-[#10120f]"
+                                onClick={() => setSelectedItem(item)}
+                                aria-label={`Open actions for ${item.name}`}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </button>
+                            </div>
+                          );
+                        })
+                      ) : null}
+                    </div>
+      
+                    {hasMoreItems ? (
+                      <div className="border-t border-[#e8eaec] px-8 py-3 bg-black/[0.01] flex justify-center sm:px-9">
+                        <Button 
+                          variant="ghost" 
+                          className="text-[#00c755] hover:bg-[#00c755]/10 hover:text-[#00c755] font-semibold rounded-full px-6"
+                          onClick={() => toggleShowAllItems(section.category)}
+                        >
+                          {isShowingAll ? "View Less" : `View ${section.totalCount - ITEM_LIMIT} More`}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </section>
-          ))}
+            );
+          })}
         </div>
       </motion.div>
 
@@ -296,7 +335,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
           <div className="px-5 pb-5 pt-6">
             <DialogHeader className="space-y-1 text-left">
               <DialogTitle className="text-[1.22rem] font-semibold tracking-[-0.04em] text-[#10120f]">
-                Pantry actions
+                Pantry Actions
               </DialogTitle>
               <DialogDescription className="text-sm leading-5 text-[rgba(16,18,15,0.58)]">
                 Choose how you want to update your pantry.
@@ -309,7 +348,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
                 className="h-10 w-full bg-[#00c755] px-4 text-[#10120f] hover:bg-[#00c755] hover:text-[#10120f]"
                 onClick={handleOpenAddIngredient}
               >
-                Add ingredient
+                Add Ingredient
               </Button>
               <Button
                 type="button"
@@ -317,7 +356,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
                 className="h-10 w-full border-[#e8eaec] bg-white px-4 text-[#10120f] hover:bg-[#dce9dd]"
                 onClick={handleOpenScan}
               >
-                Scan items
+                Scan Items
               </Button>
             </div>
           </div>
@@ -329,7 +368,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
           <div className="px-6 pb-6 pt-8">
             <DialogHeader className="text-left">
               <DialogTitle className="text-[1.4rem] font-semibold tracking-[-0.04em] text-[#10120f]">
-                Pantry item actions
+                Pantry Item Actions
               </DialogTitle>
               <DialogDescription className="mt-2 text-sm leading-6 text-[rgba(16,18,15,0.58)]">
                 {selectedItem
@@ -361,7 +400,7 @@ export function PantryView({ onGoToScan }: PantryViewProps) {
                 className="bg-[#10120f] text-white hover:bg-[#10120f] hover:text-white"
                 onClick={handleDelete}
               >
-                Delete item
+                Delete Item
               </Button>
             </DialogFooter>
           </div>

@@ -144,7 +144,7 @@ export function RecipesView() {
     >
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="space-y-1">
-          <h2 className="page-title">Suggested recipes</h2>
+          <h2 className="page-title">Suggested Recipes</h2>
           <p className="text-muted-foreground">
             Based on your pantry ({ingredients.length} items).
           </p>
@@ -183,7 +183,7 @@ export function RecipesView() {
                   )}
                 {appliedFilters.excludeIngredients.length > 3 && (
                   <Badge variant="secondary" className="bg-slate-50 text-slate-700 border border-slate-200">
-                    +{appliedFilters.excludeIngredients.length - 3} more excludes
+                    +{appliedFilters.excludeIngredients.length - 3} More Excludes
                   </Badge>
                 )}
               </div>
@@ -241,7 +241,7 @@ export function RecipesView() {
           ) : recipes.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border border-border/60 rounded-lg bg-muted/20 h-full">
               <ChefHat className="h-12 w-12 mb-4 opacity-20" />
-              <h3 className="text-lg font-semibold">No recipes found</h3>
+              <h3 className="text-lg font-semibold">No Recipes Found</h3>
               <p className="text-sm">
                 Add ingredients to your pantry and we'll find matching recipes!
               </p>
@@ -250,9 +250,17 @@ export function RecipesView() {
 	            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-20 pt-2">
 	              {recipes.map((recipe) => {
 	                  const fav = isFav(recipe.id);
+                      const isPerfectMatch = recipe.missedIngredientCount === 0;
 	                  return (
-	                  <Card key={recipe.id} className="flex flex-col h-full overflow-hidden border-[#e8eaec] bg-white py-0">
+	                  <Card key={recipe.id} className={`flex flex-col h-full overflow-hidden py-0 transition-all ${isPerfectMatch ? "border-green-400 border-2 shadow-[0_4px_20px_rgba(34,197,94,0.15)] bg-gradient-to-b from-green-50/50 to-white relative" : "border-[#e8eaec] bg-white"}`}>
 	                    <div className="relative h-48 w-full overflow-hidden">
+                          {isPerfectMatch && (
+                            <div className="absolute left-3 top-3 z-20">
+                              <Badge className="bg-green-500 hover:bg-green-600 text-white shadow-md font-extrabold px-3 py-1 rounded-full border border-green-600">
+                                ✨ 100% Match
+                              </Badge>
+                            </div>
+                          )}
 	                      <img
                         src={recipe.image}
                         alt={recipe.title}
@@ -304,14 +312,15 @@ export function RecipesView() {
                                   <Badge
                                     key={ing.id}
                                     variant="secondary"
-                                    className={
+                                    className={`${
                                       expiresSoon
                                         ? "bg-orange-100/80 text-orange-800 hover:bg-orange-200 border-0"
                                         : "bg-green-100/50 text-green-800 hover:bg-green-100 border-0"
-                                    }
+                                    } max-w-[160px] sm:max-w-[180px] group`}
+                                    title={ing.name}
                                   >
-                                    {ing.name}
-                                    {expiresSoon && <span className="ml-1" title="Expiring soon">⏳</span>}
+                                    <span className="truncate">{ing.name}</span>
+                                    {expiresSoon && <span className="ml-1 shrink-0" title="Expiring soon">⏳</span>}
                                   </Badge>
                                 );
                               }
@@ -330,9 +339,10 @@ export function RecipesView() {
                                   <Badge
                                     key={ing.id}
                                     variant="outline"
-                                    className="text-muted-foreground border-border/60"
+                                    className="text-muted-foreground border-border/60 max-w-[160px] sm:max-w-[180px]"
+                                    title={ing.name}
                                   >
-                                    {ing.name}
+                                    <span className="truncate">{ing.name}</span>
                                   </Badge>
                                 ),
                               )}
@@ -345,7 +355,7 @@ export function RecipesView() {
                             {recipe.missedIngredientCount} Missing
                           </span>
                           <span className="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-100">
-                            {recipe.usedIngredientCount} Used
+                            {recipe.usedIngredientCount} Matching
                           </span>
                         </div>
                       </div>

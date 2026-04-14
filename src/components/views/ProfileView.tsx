@@ -13,13 +13,13 @@ import { fetchPreferences } from "@/store/slices/preferencesSlice";
 import { getAuthMode, getLocalPreferences, setLocalPreferences } from "@/lib/localAuth";
 
 type Diet =
-  | "No restrictions"
+  | "No Restrictions"
   | "Vegetarian"
   | "Vegan"
   | "Pescatarian"
   | "Keto"
   | "Halal"
-  | "Gluten-free";
+  | "Gluten-Free";
 
 type Flavor = "Spicy" | "Sweet" | "Savory" | "Tangy" | "Mild";
 
@@ -32,24 +32,24 @@ type OnboardingPayload = {
 };
 
 const dietOptions: Diet[] = [
-  "No restrictions",
+  "No Restrictions",
   "Vegetarian",
   "Vegan",
   "Pescatarian",
   "Keto",
   "Halal",
-  "Gluten-free",
+  "Gluten-Free",
 ];
 
 const allergyOptions = ["Nuts", "Dairy", "Eggs", "Shellfish", "Soy", "Gluten"] as const;
 const flavorOptions: Flavor[] = ["Spicy", "Sweet", "Savory", "Tangy", "Mild"];
 const goalOptions = [
-  "Eat healthier",
-  "Lose weight",
-  "Gain muscle",
-  "Save money",
-  "Quick meals",
-  "Explore cuisines",
+  "Eat Healthier",
+  "Lose Weight",
+  "Gain Muscle",
+  "Save Money",
+  "Quick Meals",
+  "Explore Cuisines",
 ] as const;
 
 const uiSpring = { type: "spring", stiffness: 500, damping: 35 } as const;
@@ -121,7 +121,7 @@ const TogglePill = ({
 );
 
 const emptyOnboarding = (): OnboardingPayload => ({
-  dietaryPreference: "No restrictions",
+  dietaryPreference: "No Restrictions",
   allergies: [],
   customAvoid: [],
   taste: { flavors: [], spiceLevel: 0 },
@@ -463,7 +463,7 @@ export function ProfileView() {
               }}
               disabled={isLoading}
             >
-              Edit preferences
+              Edit Preferences
             </Button>
           ) : (
             <>
@@ -489,11 +489,11 @@ export function ProfileView() {
       {!isLoading && !onboardingCompleted && (
         <div className="rounded-[18px] border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-foreground flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="font-semibold">Finish setup</div>
+            <div className="font-semibold">Finish Setup</div>
             <div className="text-muted-foreground">Answer a few questions to personalize recipes and defaults.</div>
           </div>
           <Button className="rounded-full" onClick={openQuestionnaire}>
-            Start questionnaire
+            Start Questionnaire
           </Button>
         </div>
       )}
@@ -513,7 +513,7 @@ export function ProfileView() {
         <DialogContent className="max-w-2xl border-border/60 bg-background/95 shadow-2xl sm:rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between gap-3 pr-10">
-              <span>Preferences questionnaire</span>
+              <span>Preferences Questionnaire</span>
               <Badge variant="secondary" className="rounded-full">
                 Step {questionStep} of 4
               </Badge>
@@ -550,7 +550,7 @@ export function ProfileView() {
             {questionStep === 2 && (
               <div className="space-y-3">
                 <div className="space-y-0.5">
-                  <div className="font-semibold">Allergies & avoids</div>
+                  <div className="font-semibold">Allergies & Avoids</div>
                   <div className="text-sm text-muted-foreground">We’ll avoid these in your recipes.</div>
                 </div>
 
@@ -636,7 +636,7 @@ export function ProfileView() {
 
                 <div className="pt-2 space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Spice level</span>
+                    <span className="text-muted-foreground">Spice Level</span>
                     <Badge variant="secondary" className="rounded-full">
                       {questionDraft.taste.spiceLevel}/4
                     </Badge>
@@ -657,7 +657,7 @@ export function ProfileView() {
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Mild</span>
-                    <span>Very spicy</span>
+                    <span>Very Spicy</span>
                   </div>
                 </div>
               </div>
@@ -722,7 +722,7 @@ export function ProfileView() {
           <CardHeader className="space-y-1">
             <CardTitle className="flex items-center gap-2">
               <ChefHat className="h-5 w-5 text-primary" />
-              Your profile
+              Your Profile
             </CardTitle>
             <CardDescription>Quick details about your account.</CardDescription>
           </CardHeader>
@@ -766,7 +766,7 @@ export function ProfileView() {
             {isLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading preferences…
+                Loading Preferences…
               </div>
             ) : (
               <>
@@ -800,7 +800,7 @@ export function ProfileView() {
 
                 <div className="space-y-3">
                   <div className="space-y-0.5">
-                    <div className="font-semibold">Allergies & avoids</div>
+                    <div className="font-semibold">Allergies & Avoids</div>
                     <div className="text-sm text-muted-foreground">We’ll avoid these in your recipes.</div>
                   </div>
 
@@ -909,7 +909,7 @@ export function ProfileView() {
 
                       <div className="pt-2 space-y-2">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Spice level</span>
+                          <span className="text-muted-foreground">Spice Level</span>
                           <Badge variant="secondary" className="rounded-full">
                             {draft.taste.spiceLevel}/4
                           </Badge>
@@ -930,14 +930,14 @@ export function ProfileView() {
                         />
                         <div className="flex justify-between text-xs text-muted-foreground">
                           <span>Mild</span>
-                          <span>Very spicy</span>
+                          <span>Very Spicy</span>
                         </div>
                       </div>
                     </>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {saved.taste.flavors.length === 0 ? (
-                        <Badge variant="secondary" className="rounded-full">No flavors selected</Badge>
+                        <Badge variant="secondary" className="rounded-full">No Flavors Selected</Badge>
                       ) : (
                         saved.taste.flavors.map((item) => (
                           <Badge key={item} variant="secondary" className="rounded-full">
@@ -974,7 +974,7 @@ export function ProfileView() {
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {saved.goals.length === 0 ? (
-                        <Badge variant="secondary" className="rounded-full">No goals selected</Badge>
+                        <Badge variant="secondary" className="rounded-full">No Goals Selected</Badge>
                       ) : (
                         saved.goals.map((item) => (
                           <Badge key={item} variant="secondary" className="rounded-full">

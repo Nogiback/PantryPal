@@ -361,7 +361,7 @@ export function ScanView() {
       transition={{ duration: 0.45 }}
     >
       <div className="flex flex-col space-y-2">
-        <h2 className="page-title">Scan a grocery image</h2>
+        <h2 className="page-title">Scan a Grocery Image</h2>
         <p className="text-muted-foreground">
           Upload a receipt or pantry photo, review extracted items, then save to your pantry.
         </p>
@@ -402,7 +402,7 @@ export function ScanView() {
                     <Upload className="h-8 w-8 text-primary" />
                   </div>
                   <div className="text-center space-y-1">
-                    <p className="font-medium">Click to upload image</p>
+                    <p className="font-medium">Click to Upload Image</p>
                     <p className="text-xs text-muted-foreground">
                       JPG, PNG, WEBP
                     </p>
