@@ -631,7 +631,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
 
         <section id="support" className="grid gap-6 lg:grid-cols-[1fr_0.92fr]">
           <FadeIn className="rounded-[36px] bg-[#10120f] p-6 text-white">
-            <p className="lp-eyebrow text-[#d7dbd1]">Support when you need it</p>
+            <p className="lp-eyebrow !text-[#d7dbd1]">Support when you need it</p>
             <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-white sm:text-5xl">
               Guidance that makes daily cooking easier.
             </h2>
@@ -703,7 +703,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
           </FadeIn>
 
           <FadeIn id="faq" delay={0.08} className="rounded-[36px] bg-[#10120f] p-8 text-white">
-            <p className="lp-eyebrow text-[#d7dbd1]">Common Questions</p>
+            <p className="lp-eyebrow !text-[#d7dbd1]">Common Questions</p>
             <h2 className="display-font mt-4 text-4xl tracking-[-0.05em] text-white sm:text-5xl">
               Answers for people getting started.
             </h2>
@@ -720,7 +720,7 @@ export function LandingPage({ onLogin, onSignUp }: LandingPageProps) {
         </section>
 
         <FadeIn id="cta" className="rounded-[40px] bg-[#10120f] px-6 py-14 text-center text-white sm:px-10">
-          <p className="lp-eyebrow justify-center text-[#d7dbd1]">Get started with ease</p>
+          <p className="lp-eyebrow justify-center !text-[#d7dbd1]">Get started with ease</p>
           <h2 className="display-font mx-auto mt-4 max-w-4xl text-4xl tracking-[-0.06em] text-white sm:text-5xl lg:text-6xl">
             Bring more calm to your kitchen with PantryPal.
           </h2>
