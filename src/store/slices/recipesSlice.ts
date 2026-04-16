@@ -1,36 +1,38 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   getRecipesByIngredients,
-  searchFoodVideos,
   getRecipeInformation,
 } from "@/services/spoonacular";
-import type { Recipe, Video, RecipeDetails } from "@/types";
+import type { Recipe, AiRecipe, RecipeDetails, AppliedRecipeFilters } from "@/types";
 import type { RootState } from "../index";
+import { clearPreferences, fetchPreferences, setPreferences } from "./preferencesSlice";
 
 interface RecipesState {
   items: Recipe[];
-  videos: Video[];
+  appliedFilters: AppliedRecipeFilters | null;
+  aiRecipes: AiRecipe[];
   selectedRecipeDetails: RecipeDetails | null;
   detailsStatus: "idle" | "loading" | "succeeded" | "failed";
   status: "idle" | "loading" | "succeeded" | "failed";
-  videoStatus: "idle" | "loading" | "succeeded" | "failed";
+  aiStatus: "idle" | "loading" | "succeeded" | "failed";
   lastRecipeSignature: string;
-  lastVideoSignature: string;
+  lastAiSignature: string;
   error: string | null;
-  videoError: string | null;
+  aiError: string | null;
 }
 
 const initialState: RecipesState = {
   items: [],
-  videos: [],
+  appliedFilters: null,
+  aiRecipes: [],
   selectedRecipeDetails: null,
   detailsStatus: "idle",
   status: "idle",
-  videoStatus: "idle",
+  aiStatus: "idle",
   lastRecipeSignature: "",
-  lastVideoSignature: "",
+  lastAiSignature: "",
   error: null,
-  videoError: null,
+  aiError: null,
 };
 
 const createIngredientSignature = (ingredients: string[]) =>
@@ -41,36 +43,77 @@ const createIngredientSignature = (ingredients: string[]) =>
 
 export const fetchRecipes = createAsyncThunk(
   "recipes/fetchByIngredients",
-  async (ingredients: string[]) => {
-    const recipesResponse = await getRecipesByIngredients(ingredients);
-    return recipesResponse;
+  async (_, { getState }) => {
+    const state = getState() as RootState;
+    
+    const sortedIngredients = [...state.ingredients.items].sort((a, b) => {
+      const aExpiry = a.expiryDate ? new Date(a.expiryDate).getTime() : Infinity;
+      const bExpiry = b.expiryDate ? new Date(b.expiryDate).getTime() : Infinity;
+      return aExpiry - bExpiry;
+    });
+
+    const includeIngredients = sortedIngredients.map((i) => i.name);
+    const onboarding = state.preferences.onboarding;
+    const intolerances = onboarding?.allergies ?? [];
+    const excludeIngredients = onboarding?.customAvoid ?? [];
+    const dietaryPreference = onboarding?.dietaryPreference;
+    const goals = onboarding?.goals;
+
+    const signature = createIngredientSignature(includeIngredients);
+    const result = await getRecipesByIngredients(
+      includeIngredients,
+      intolerances,
+      excludeIngredients,
+      { dietaryPreference, goals },
+    );
+    return { ...result, signature };
   },
   {
-    condition: (ingredients, { getState }) => {
+    condition: (_, { getState }) => {
       const state = getState() as RootState;
       if (state.recipes.status === "loading") return false;
-      const nextSignature = createIngredientSignature(ingredients);
+      const nextSignature = createIngredientSignature(
+        state.ingredients.items.map((i) => i.name),
+      );
       return nextSignature !== state.recipes.lastRecipeSignature;
     },
   },
 );
 
-export const fetchVideos = createAsyncThunk(
-  "recipes/fetchVideos",
-  async (ingredients: string[]) => {
-    const query = ingredients
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .join(" ");
-    const videosResponse = await searchFoodVideos(query);
-    return videosResponse.videos;
+export const fetchAiRecipes = createAsyncThunk(
+  "recipes/fetchAiRecipes",
+  async (_, { getState }) => {
+    const state = getState() as RootState;
+    const ingredients = state.ingredients.items.map((i) => ({
+      name: i.name,
+      quantity: i.quantity || "unknown"
+    }));
+
+    const response = await fetch("/api/recipes/aws", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ingredients }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to generate AI recipes: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const parsed = JSON.parse(data.text);
+    const signature = createIngredientSignature(ingredients.map(i => i.name));
+    return { recipes: parsed.recipes, signature };
   },
   {
-    condition: (ingredients, { getState }) => {
+    condition: (_, { getState }) => {
       const state = getState() as RootState;
-      if (state.recipes.videoStatus === "loading") return false;
-      const nextSignature = createIngredientSignature(ingredients);
-      return nextSignature !== state.recipes.lastVideoSignature;
+      if (state.recipes.aiStatus === "loading") return false;
+      const nextSignature = createIngredientSignature(
+        state.ingredients.items.map((i) => i.name)
+      );
+      return nextSignature !== state.recipes.lastAiSignature;
     },
   },
 );
@@ -90,35 +133,53 @@ const recipesSlice = createSlice({
       state.selectedRecipeDetails = null;
       state.detailsStatus = "idle";
     },
+    resetAiRecipes: (state) => {
+       state.lastAiSignature = "";
+       state.aiRecipes = [];
+       state.aiStatus = "idle";
+    }
   },
   extraReducers: (builder) => {
     builder
+      // Preferences affect recipe results (diet/allergies/goals). Invalidate the cached signature so
+      // navigating back to Recipes triggers a refetch even if the pantry hasn't changed.
+      .addCase(fetchPreferences.fulfilled, (state) => {
+        state.lastRecipeSignature = "";
+      })
+      .addCase(setPreferences, (state) => {
+        state.lastRecipeSignature = "";
+      })
+      .addCase(clearPreferences, (state) => {
+        state.lastRecipeSignature = "";
+      })
       .addCase(fetchRecipes.pending, (state) => {
         state.status = "loading";
-        state.videoStatus = "idle"; // Reset videos so they refresh when user visits the tab
-        state.videos = []; // Clear old videos
+        state.items = [];
+        state.appliedFilters = null;
+        state.error = null;
       })
       .addCase(fetchRecipes.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.items = action.payload;
-        state.lastRecipeSignature = createIngredientSignature(action.meta.arg);
+        state.items = action.payload.recipes;
+        state.appliedFilters = action.payload.applied;
+        state.lastRecipeSignature = action.payload.signature;
       })
       .addCase(fetchRecipes.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.error.message || "Failed to fetch recipes";
       })
-      .addCase(fetchVideos.pending, (state) => {
-        state.videoStatus = "loading";
-        state.videos = []; // Clear old videos when fetching new ones
+      .addCase(fetchAiRecipes.pending, (state) => {
+        state.aiStatus = "loading";
+        state.aiError = null;
       })
-      .addCase(fetchVideos.fulfilled, (state, action) => {
-        state.videoStatus = "succeeded";
-        state.videos = action.payload;
-        state.lastVideoSignature = createIngredientSignature(action.meta.arg);
+      .addCase(fetchAiRecipes.fulfilled, (state, action) => {
+        state.aiStatus = "succeeded";
+        state.aiRecipes = action.payload.recipes;
+        state.lastAiSignature = action.payload.signature;
       })
-      .addCase(fetchVideos.rejected, (state, action) => {
-        state.videoStatus = "failed";
-        state.videoError = action.error.message || "Failed to fetch videos";
+      .addCase(fetchAiRecipes.rejected, (state, action) => {
+        state.aiStatus = "failed";
+        state.aiError = action.error.message || "Failed to fetch AI recipes";
       })
       .addCase(fetchRecipeDetails.pending, (state) => {
         state.detailsStatus = "loading";
@@ -133,5 +194,5 @@ const recipesSlice = createSlice({
   },
 });
 
-export const { clearSelectedRecipe } = recipesSlice.actions;
+export const { clearSelectedRecipe, resetAiRecipes } = recipesSlice.actions;
 export default recipesSlice.reducer;

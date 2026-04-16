@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, CheckCircle2, Trash2, Plus } from "lucide-react";
+import { Upload, CheckCircle2, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -11,13 +11,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/store/hooks";
-import { addIngredient } from "@/store/slices/ingredientsSlice";
+import { addIngredient, savePantry } from "@/store/slices/ingredientsSlice";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ExtractedItem {
   id: string;
   name: string;
   quantity: string;
+  unit: string;
+  expiryDate: string;
+  inFreezer?: boolean;
 }
+
+const UNITS = ["pcs", "g", "kg", "oz", "lb", "ml", "L", "cup", "tbsp", "tsp"];
 
 interface AwsResponse {
   text?: string;
@@ -69,6 +75,9 @@ export function ScanView() {
           items: scannedItems.map((item) => ({
             name: item.name,
             quantity: item.quantity || "1",
+            unit: item.unit,
+            expiryDate: item.expiryDate || undefined,
+            inFreezer: item.inFreezer,
           })),
         },
         null,
@@ -187,17 +196,24 @@ export function ScanView() {
       .trim();
 
     const parsed = JSON.parse(cleaned) as {
-      items?: Array<{ name?: unknown; quantity?: unknown }>;
+      items?: Array<{ name?: unknown; quantity?: unknown; unit?: unknown; expiryDate?: unknown }>;
     };
     const rows = Array.isArray(parsed.items) ? parsed.items : [];
 
     return rows
-      .map((item) => ({
-        id: crypto.randomUUID(),
-        name: typeof item.name === "string" ? item.name.trim() : "",
-        quantity:
-          typeof item.quantity === "string" ? item.quantity.trim() : "1",
-      }))
+      .map((item) => {
+        let qty = typeof item.quantity === "string" ? item.quantity.trim() : "1";
+        if (!qty || qty.toLowerCase() === "unknown") qty = "1";
+        
+        return {
+          id: crypto.randomUUID(),
+          name: typeof item.name === "string" ? item.name.trim() : "",
+          quantity: qty,
+          unit: typeof item.unit === "string" ? item.unit.trim() : "pcs",
+          expiryDate: typeof item.expiryDate === "string" ? item.expiryDate.trim() : "",
+          inFreezer: false,
+        };
+      })
       // Ignore empty names so users only see valid candidate rows.
       .filter((item) => item.name.length > 0);
   };
@@ -281,8 +297,8 @@ export function ScanView() {
   };
   const updateItem = (
     id: string,
-    field: "name" | "quantity",
-    value: string,
+    field: "name" | "quantity" | "unit" | "expiryDate" | "inFreezer",
+    value: string | boolean,
   ) => {
     setScannedItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
@@ -296,7 +312,7 @@ export function ScanView() {
   const addManualItem = () => {
     setScannedItems((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), name: "", quantity: "1" },
+      { id: crypto.randomUUID(), name: "", quantity: "1", unit: "pcs", expiryDate: "", inFreezer: false },
     ]);
   };
 
@@ -321,6 +337,9 @@ export function ScanView() {
       .map((item) => ({
         name: item.name.trim(),
         quantity: item.quantity.trim() || "1",
+        unit: item.unit,
+        expiryDate: item.expiryDate || undefined,
+        inFreezer: item.inFreezer,
       }))
       .filter((item) => item.name.length > 0);
 
@@ -330,28 +349,26 @@ export function ScanView() {
     }
 
     cleanedItems.forEach((item) => dispatch(addIngredient(item)));
+    dispatch(savePantry());
     setIsSaved(true);
   };
 
   return (
     <motion.div
       className="space-y-6"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
     >
       <div className="flex flex-col space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">
-          Scan Grocery Image
-        </h2>
+        <h2 className="page-title">Scan a Grocery Image</h2>
         <p className="text-muted-foreground">
-          Upload image on the left, compare extracted items on the right, then
-          save to pantry.
+          Upload a receipt or pantry photo, review extracted items, then save to your pantry.
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="rounded-3xl border-[#e8eaec] bg-white lg:col-span-5">
           <CardHeader>
             <CardTitle>Image Upload</CardTitle>
             <CardDescription>
@@ -378,14 +395,14 @@ export function ScanView() {
 
               {!previewUrl ? (
                 <div
-                  className="border-2 border-dashed rounded-lg p-12 flex flex-col items-center justify-center space-y-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex cursor-pointer flex-col items-center justify-center space-y-4 rounded-2xl border border-[#e8eaec] bg-white p-12 transition-colors hover:bg-[#fcfcfc]"
                   onClick={() => !isScanning && fileInputRef.current?.click()}
                 >
                   <div className="bg-primary/10 p-4 rounded-full">
                     <Upload className="h-8 w-8 text-primary" />
                   </div>
                   <div className="text-center space-y-1">
-                    <p className="font-medium">Click to upload image</p>
+                    <p className="font-medium">Click to Upload Image</p>
                     <p className="text-xs text-muted-foreground">
                       JPG, PNG, WEBP
                     </p>
@@ -394,7 +411,7 @@ export function ScanView() {
               ) : (
                 <button
                   type="button"
-                  className="w-full rounded-lg overflow-hidden border cursor-pointer"
+                  className="w-full cursor-pointer overflow-hidden rounded-2xl border border-[#e8eaec] bg-white"
                   onClick={() => !isScanning && fileInputRef.current?.click()}
                 >
                   <img
@@ -422,36 +439,34 @@ export function ScanView() {
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="grid w-full grid-cols-2 gap-2">
                 <Button
                   onClick={handleAnalyzeImage}
                   disabled={isScanning || !selectedFile}
-                  className="flex-1"
+                  className="h-10 w-full bg-[#00c755] text-[#10120f] hover:bg-[#00c755] hover:text-[#10120f] disabled:bg-[#00c755] disabled:text-[#10120f]"
                 >
-                  {isScanning ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Scanning...
-                    </>
-                  ) : (
-                    "Scan Image"
-                  )}
+                  {isScanning ? "Scanning..." : "Scan Image"}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={clearScan}
                   disabled={isScanning}
+                  className="h-10 w-full border-[#e8eaec] bg-white text-[#10120f] hover:bg-[#dce9dd] hover:text-[#10120f]"
                 >
-                  Reset
+                  Reset image
                 </Button>
               </div>
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-3xl border-[#e8eaec] bg-white lg:col-span-7">
           <CardHeader>
             <CardTitle>Extraction Result</CardTitle>
             <CardDescription>
@@ -468,45 +483,100 @@ export function ScanView() {
               )}
 
               {scannedItems.length === 0 ? (
-                <div className="border-2 border-dashed rounded-lg py-12 text-center text-muted-foreground">
+                <div className="rounded-2xl border border-border/60 bg-muted/20 py-12 text-center text-muted-foreground">
                   Scan an image to see editable extraction results here.
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-[1fr_1fr_auto] gap-2 px-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    <span>Item Name</span>
-                    <span>Quantity</span>
-                    <span className="text-right">Actions</span>
+                  <div className="hidden md:flex gap-3 px-3 text-xs font-semibold text-muted-foreground tracking-[0.04em]">
+                    <span className="flex-1">Item Name</span>
+                    <span className="w-[70px]">Qty</span>
+                    <span className="w-[90px]">Unit</span>
+                    <span className="w-[140px]">Expiry</span>
+                    <span className="w-[60px] text-center" title="In Freezer">Freezer</span>
+                    <span className="w-[40px] text-right">Action</span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-4 md:space-y-2 mt-4 md:mt-0">
                     {scannedItems.map((item) => (
                       <div
                         key={item.id}
-                        className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center rounded-md border p-2"
+                        className="flex flex-col items-start gap-3 rounded-xl border border-[#e8eaec] bg-white p-3 md:flex-row md:items-center md:p-2"
                       >
-                        <Input
-                          value={item.name}
-                          onChange={(e) =>
-                            updateItem(item.id, "name", e.target.value)
-                          }
-                          placeholder="Item name"
-                        />
-                        <Input
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateItem(item.id, "quantity", e.target.value)
-                          }
-                          placeholder="Quantity"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeItem(item.id)}
-                          className="justify-self-end hover:text-destructive"
-                          aria-label="Remove row"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="w-full md:flex-1 flex gap-2 items-center">
+                          <span className="md:hidden text-xs font-semibold w-16 shrink-0 text-muted-foreground tracking-[0.04em]">Name</span>
+                          <Input
+                            value={item.name}
+                            onChange={(e) =>
+                              updateItem(item.id, "name", e.target.value)
+                            }
+                            placeholder="Item name"
+                            className="flex-1 rounded-lg bg-white"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 md:flex gap-3 w-full md:w-auto items-center">
+                          <div className="flex gap-2 items-center md:w-[70px]">
+                            <span className="md:hidden text-xs font-semibold w-16 shrink-0 text-muted-foreground tracking-[0.04em]">Qty</span>
+                            <Input
+                              value={item.quantity}
+                              onChange={(e) =>
+                                updateItem(item.id, "quantity", e.target.value)
+                              }
+                              placeholder="1"
+                              type="number"
+                              min="0"
+                              step="any"
+                              className="rounded-lg bg-white"
+                            />
+                          </div>
+                          <div className="flex gap-2 items-center md:w-[90px]">
+                            <span className="md:hidden text-xs font-semibold w-12 shrink-0 text-right pr-2 text-muted-foreground tracking-[0.04em]">Unit</span>
+                            <Select value={item.unit} onValueChange={(val) => updateItem(item.id, "unit", val)}>
+                              <SelectTrigger className="h-10 w-full rounded-lg bg-white">
+                                <SelectValue placeholder="Unit" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {UNITS.map((u) => (
+                                  <SelectItem key={u} value={u}>{u}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="col-span-2 md:col-span-1 flex gap-2 items-center md:w-[140px]">
+                            <span className="md:hidden text-xs font-semibold w-16 shrink-0 text-muted-foreground tracking-[0.04em]">Expiry</span>
+                            <Input
+                              value={item.expiryDate}
+                              onChange={(e) =>
+                                updateItem(item.id, "expiryDate", e.target.value)
+                              }
+                              type="date"
+                              className="flex-1 rounded-lg bg-white"
+                              title="Expiry date"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center w-full md:w-auto">
+                          <div className="flex items-center gap-2 md:w-[60px] md:justify-center">
+                            <span className="md:hidden text-xs font-semibold w-16 shrink-0 text-muted-foreground tracking-[0.04em]">Freezer</span>
+                            <input
+                              type="checkbox"
+                              checked={!!item.inFreezer}
+                              onChange={(e) =>
+                                updateItem(item.id, "inFreezer", e.target.checked)
+                              }
+                              className="w-5 h-5 rounded text-primary focus:ring-primary accent-primary"
+                              title="Mark as in freezer"
+                            />
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeItem(item.id)}
+                            className="text-muted-foreground hover:text-destructive md:w-[40px]"
+                            aria-label="Remove row"
+                          >
+                            <Trash2 className="h-5 w-5 md:h-4 md:w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -516,7 +586,7 @@ export function ScanView() {
                     onClick={addManualItem}
                     className="w-full"
                   >
-                    <Plus className="h-4 w-4" /> Add Row
+                    Add Row
                   </Button>
 
                   <Button className="w-full" onClick={saveToPantry}>

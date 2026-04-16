@@ -14,11 +14,11 @@ import {
   Users,
   ExternalLink,
   Info,
-  ChefHat,
-  CheckCircle2,
   X,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addRecipeToPlan, removeRecipeFromPlan } from "@/store/slices/mealPlannerSlice";
 
 interface RecipeDetailsProps {
   recipe: RecipeDetails | null;
@@ -33,11 +33,36 @@ export function RecipeDetailsModal({
   onClose,
   isLoading,
 }: RecipeDetailsProps) {
+  const dispatch = useAppDispatch();
+  const plannedRecipes = useAppSelector((state) => state.mealPlanner.plannedRecipes);
+
+  const isPlanned = recipe ? plannedRecipes.some(r => r.id === recipe.id.toString() && r.sourceType === 'api') : false;
+
+  const toggleMealPlan = () => {
+    if (!recipe) return;
+    if (isPlanned) {
+      dispatch(removeRecipeFromPlan(recipe.id.toString()));
+    } else {
+      const required = recipe.extendedIngredients?.map((ing) => ({
+        name: ing.name,
+        quantity: `${ing.amount} ${ing.unit}`
+      })) || [];
+      dispatch(addRecipeToPlan({
+        id: recipe.id.toString(),
+        sourceType: 'api',
+        title: recipe.title,
+        image: recipe.image,
+        requiredIngredients: required,
+        originalRecipe: recipe
+      }));
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl p-0 overflow-hidden h-[90vh] md:h-[85vh] flex flex-col gap-0 border-0 rounded-2xl shadow-2xl bg-background/95 backdrop-blur-md">
+      <DialogContent className="max-w-5xl p-0 overflow-hidden h-[90vh] md:h-[85vh] flex flex-col gap-0 border-0 rounded-2xl bg-background/95 backdrop-blur-md">
         {isLoading ? (
-          <div className="flex h-full w-full items-center justify-center flex-col gap-6 bg-linear-to-br from-background to-muted/20">
+          <div className="flex h-full w-full items-center justify-center flex-col gap-6 bg-background">
             <div className="relative">
               <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
               <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-primary border-r-4 border-r-transparent"></div>
@@ -55,7 +80,7 @@ export function RecipeDetailsModal({
           <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center h-full">
             <Info className="h-16 w-16 mb-6 opacity-20 text-primary" />
             <h3 className="text-2xl font-bold text-foreground mb-2">
-              Recipe details unavailable
+              Recipe details unavailable.
             </h3>
             <p className="max-w-xs mb-8">
               We couldn't retrieve the details for this dish right now.
@@ -81,7 +106,7 @@ export function RecipeDetailsModal({
                   alt={recipe.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent"></div>
+                <div className="absolute inset-0 bg-black/50"></div>
 
                 {/* Floating Meta Cards - Desktop only or stack on mobile image */}
                 <div className="absolute bottom-6 left-6 right-6 flex flex-wrap gap-3">
@@ -93,7 +118,7 @@ export function RecipeDetailsModal({
                   >
                     <div className="flex items-center gap-2 text-white/90 mb-1">
                       <Clock className="w-4 h-4 text-primary-foreground" />
-                      <span className="text-xs font-semibold uppercase tracking-wider">
+                      <span className="text-xs font-semibold">
                         Time
                       </span>
                     </div>
@@ -110,7 +135,7 @@ export function RecipeDetailsModal({
                   >
                     <div className="flex items-center gap-2 text-white/90 mb-1">
                       <Users className="w-4 h-4 text-primary-foreground" />
-                      <span className="text-xs font-semibold uppercase tracking-wider">
+                      <span className="text-xs font-semibold">
                         Servings
                       </span>
                     </div>
@@ -138,7 +163,7 @@ export function RecipeDetailsModal({
                         >
                           <Badge
                             variant="outline"
-                            className="capitalize bg-primary/5 text-primary border-primary/10 px-2.5 py-1 text-[10px] font-bold tracking-wider"
+                            className="border-[#e8eaec] bg-[#f7faf7] px-2.5 py-1 text-[10px] font-bold tracking-wider capitalize text-[#10120f]"
                           >
                             {type}
                           </Badge>
@@ -159,7 +184,7 @@ export function RecipeDetailsModal({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <DialogTitle className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight text-foreground leading-[1.15] drop-shadow-sm">
+                    <DialogTitle className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight text-foreground leading-[1.2]">
                       {recipe.title}
                     </DialogTitle>
                   </motion.div>
@@ -169,11 +194,11 @@ export function RecipeDetailsModal({
                   <div className="px-6 md:px-10 py-8 space-y-12">
                     {/* Summary / About */}
                     <section className="space-y-4">
-                      <h3 className="text-lg font-bold uppercase tracking-widest text-primary/80 flex items-center gap-2">
-                        <Info className="w-4 h-4" /> About this dish
+                      <h3 className="text-lg font-bold text-[#10120f]">
+                        About This Dish
                       </h3>
                       <div
-                        className="text-muted-foreground leading-relaxed text-base prose prose-sm max-w-none [&>a]:text-primary [&>a]:underline [&>b]:text-foreground [&>b]:font-semibold"
+                        className="prose prose-sm max-w-none rounded-[24px] border border-[#e8eaec] bg-[#f7faf7] p-5 text-base leading-[1.5] text-muted-foreground [&>a]:text-primary [&>a]:underline [&>b]:font-semibold [&>b]:text-foreground"
                         dangerouslySetInnerHTML={{ __html: recipe.summary }}
                       />
                     </section>
@@ -182,8 +207,7 @@ export function RecipeDetailsModal({
                       {/* Ingredients */}
                       <section className="space-y-6">
                         <div className="flex items-center justify-between border-b pb-4">
-                          <h3 className="text-xl font-bold flex items-center gap-3">
-                            <ChefHat className="w-6 h-6 text-primary" />
+                          <h3 className="text-xl font-bold text-[#10120f]">
                             Ingredients
                           </h3>
                           <Badge variant="outline" className="rounded-full">
@@ -199,21 +223,21 @@ export function RecipeDetailsModal({
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: (idx % 10) * 0.05 }}
-                                className="flex items-center gap-4 p-4 rounded-2xl bg-muted/30 border border-transparent hover:border-primary/20 hover:bg-muted/50 transition-all group"
+                                className="group flex items-center gap-4 rounded-2xl border border-[#10120f] bg-[#10120f] p-4 transition-all"
                               >
-                                <div className="w-12 h-12 rounded-xl bg-white p-2 shadow-sm shrink-0 group-hover:scale-110 transition-transform">
+                                <div className="h-12 w-12 shrink-0 rounded-xl bg-white p-2 transition-transform">
                                   <img
                                     src={`https://spoonacular.com/cdn/ingredients_100x100/${ing.image}`}
                                     alt={ing.name}
                                     className="w-full h-full object-contain mix-blend-multiply"
                                     loading="lazy"
-                                  />
+                                />
                                 </div>
                                 <div className="flex flex-col min-w-0">
-                                  <span className="font-bold text-foreground truncate capitalize">
+                                  <span className="font-bold text-white truncate capitalize">
                                     {ing.name}
                                   </span>
-                                  <span className="text-sm text-muted-foreground">
+                                  <span className="text-sm text-[rgba(255,255,255,0.62)]">
                                     {ing.amount} {ing.unit}
                                   </span>
                                 </div>
@@ -226,8 +250,7 @@ export function RecipeDetailsModal({
                       {/* Instructions */}
                       <section className="space-y-8">
                         <div className="flex items-center justify-between border-b pb-4">
-                          <h3 className="text-xl font-bold flex items-center gap-3">
-                            <CheckCircle2 className="w-6 h-6 text-primary" />
+                          <h3 className="text-xl font-bold text-[#10120f]">
                             Preparation
                           </h3>
                         </div>
@@ -235,32 +258,28 @@ export function RecipeDetailsModal({
                         {recipe.analyzedInstructions?.[0]?.steps?.length > 0 ? (
                           <ol className="space-y-10 relative">
                             {/* Vertical Line for steps */}
-                            <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-muted"></div>
+                            <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-[#10120f]"></div>
 
                             {recipe.analyzedInstructions[0].steps.map(
                               (step) => (
-                                <motion.li
+                              <li
                                   key={step.number}
-                                  initial={{ opacity: 0, x: 20 }}
-                                  whileInView={{ opacity: 1, x: 0 }}
-                                  viewport={{ once: true }}
-                                  transition={{ delay: 0.1 }}
                                   className="relative pl-16 group"
                                 >
-                                  <div className="absolute left-0 top-0 w-12 h-12 rounded-full bg-background border-4 border-muted group-hover:border-primary transition-colors flex items-center justify-center font-black text-primary shadow-sm z-10">
+                                  <div className="absolute left-0 top-0 z-10 flex h-12 w-12 items-center justify-center rounded-full border border-[#e8eaec] bg-white font-black text-[#10120f] transition-colors group-hover:bg-[#10120f] group-hover:text-white">
                                     {step.number}
                                   </div>
                                   <div className="space-y-4 ml-2">
-                                    <p className="text-lg leading-relaxed text-foreground/90 font-medium tracking-tight">
+                                    <p className="max-w-[640px] rounded-[24px] border border-[#e8eaec] bg-[#f7faf7] px-5 py-4 text-lg font-medium leading-[1.5] tracking-tight text-foreground/90">
                                       {step.step}
                                     </p>
                                   </div>
-                                </motion.li>
+                                </li>
                               ),
                             )}
                           </ol>
                         ) : (
-                          <div className="p-12 text-center bg-muted/20 rounded-3xl border-2 border-dashed flex flex-col items-center gap-6">
+                          <div className="flex flex-col items-center gap-6 rounded-3xl border border-[#e8eaec] bg-[#f7faf7] p-12 text-center">
                             <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
                               <ExternalLink className="w-8 h-8 text-muted-foreground" />
                             </div>
@@ -276,16 +295,14 @@ export function RecipeDetailsModal({
                             <Button
                               variant="outline"
                               asChild
-                              className="rounded-full px-8 bg-background shadow-sm hover:shadow-md transition-all"
+                              className="rounded-full bg-background px-8"
                             >
                               <a
                                 href={recipe.sourceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-2"
                               >
-                                View Original Recipe{" "}
-                                <ExternalLink className="w-4 h-4" />
+                                View Original Recipe
                               </a>
                             </Button>
                           </div>
@@ -297,7 +314,7 @@ export function RecipeDetailsModal({
                     <Separator />
                     <footer className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6">
                       <div className="space-y-1 text-center sm:text-left">
-                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+                        <p className="text-sm font-semibold text-muted-foreground">
                           Recipe Source
                         </p>
                         <p className="font-bold text-foreground">
@@ -305,20 +322,30 @@ export function RecipeDetailsModal({
                             new URL(recipe.sourceUrl).hostname}
                         </p>
                       </div>
-                      <Button
-                        asChild
-                        size="lg"
-                        className="rounded-full px-10 shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all font-bold"
-                      >
-                        <a
-                          href={recipe.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2"
+                      <div className="flex gap-3">
+                        <Button
+                          variant={isPlanned ? "secondary" : "default"}
+                          size="lg"
+                          className={`rounded-full px-8 font-bold ${isPlanned ? "border-0 bg-[#10120f] text-white hover:bg-[#10120f] hover:text-white" : ""}`}
+                          onClick={toggleMealPlan}
                         >
-                          Full Details <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </Button>
+                          {isPlanned ? "Planned" : "Add to Plan"}
+                        </Button>
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="lg"
+                          className="rounded-full px-8 transition-all font-bold"
+                        >
+                          <a
+                            href={recipe.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Full Details
+                          </a>
+                        </Button>
+                      </div>
                     </footer>
                   </div>
                 </ScrollArea>
