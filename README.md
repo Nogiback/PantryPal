@@ -4,7 +4,7 @@
 *PROG8950 - Computer Applications Development (Winter 2026)*  
 *Conestoga College*
 
-PantryPal is an intelligent kitchen companion designed to solve the daily "mental load" of meal planning. By deeply tracking your pantry inventory, parsing grocery receipts through AI vision, and querying custom smart recipes, PantryPal ensures you waste less food and spend less time stressing over what's for dinner.
+PantryPal is an intelligent kitchen companion designed to solve the daily mental load of meal planning. By deeply tracking your pantry inventory, parsing grocery receipts through AI vision, and querying custom smart recipes, PantryPal ensures you waste less food and spend less time stressing over what's for dinner.
 
 ---
 
@@ -13,7 +13,7 @@ PantryPal is an intelligent kitchen companion designed to solve the daily "menta
 - **Personalized Pantry Tracking:** Easily manage your ingredients, expiration dates, and quantities.
 - **AI Receipt Scanning:** Powered by AWS Bedrock, automatically parse grocery receipts or images of your fridge to extract and add ingredients into your inventory.
 - **Smart Recipe Generation:** Generate dynamic meals via the Spoonacular API perfectly matched to the ingredients *already* in your pantry. 100% ingredient match recipes are uniquely highlighted!
-- **AI Recipe Generator:** Got some weird leftover ingredients? PantryPal leverages an LLM to hallucinate a perfectly edible custom recipe to save your groceries from the trash.
+- **AI Recipe Generator:** Got some weird leftover ingredients? PantryPal leverages an LLM to generate a perfectly edible custom recipe to save your groceries from the trash.
 - **Meal Planner & Shopping Lists:** Turn your favorite recipes into a weekly meal plan, automatically exporting the missing ingredients into a clean shopping list.
 
 ## 💻 Tech Stack
