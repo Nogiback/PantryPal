@@ -1,128 +1,75 @@
-# PantryPal
-Group #3 - Capstone Project - PROG8950 - Computer Applications Development (Winter 2026) - Conestoga College
+# 🛒 PantryPal
 
-# Timeline
+**Group #3 - Capstone Project**  
+*PROG8950 - Computer Applications Development (Winter 2026)*  
+*Conestoga College*
 
-## 8-Week Development Timeline (5-Person Team)
-Team Size: 5 developers
+PantryPal is an intelligent kitchen companion designed to solve the daily "mental load" of meal planning. By deeply tracking your pantry inventory, parsing grocery receipts through AI vision, and querying custom smart recipes, PantryPal ensures you waste less food and spend less time stressing over what's for dinner.
 
-Duration: 8 weeks (February - April 2026)
+---
 
-Tech Stack: React, Node.js, PostgreSQL, LLM/AI for receipt scanning (TBD)
+## ✨ Features
 
-Methodology: Agile with 2-week sprints
+- **Personalized Pantry Tracking:** Easily manage your ingredients, expiration dates, and quantities.
+- **AI Receipt Scanning:** Powered by AWS Bedrock, automatically parse grocery receipts or images of your fridge to extract and add ingredients into your inventory.
+- **Smart Recipe Generation:** Generate dynamic meals via the Spoonacular API perfectly matched to the ingredients *already* in your pantry. 100% ingredient match recipes are uniquely highlighted!
+- **AI Recipe Generator:** Got some weird leftover ingredients? PantryPal leverages an LLM to hallucinate a perfectly edible custom recipe to save your groceries from the trash.
+- **Meal Planner & Shopping Lists:** Turn your favorite recipes into a weekly meal plan, automatically exporting the missing ingredients into a clean shopping list.
 
-## Sprint Breakdown
-### Sprint 0: Project Setup & Planning (Week 1: Feb 10-16)
-Goals: Foundation and architecture setup
+## 💻 Tech Stack
 
-Sprint Deliverable: ✅ Working dev environment, deployed skeleton app, auth working
+- **Frontend:** React 19, Vite, TailwindCSS (v4), Framer Motion, Redux Toolkit
+- **Backend:** Node.js API server
+- **AI Integrations:** AWS Bedrock (Nova Lite Vision API)
+- **Recipe Data:** Spoonacular API
 
-### Sprint 1: Core Inventory & User Management (Weeks 2-3: Feb 17 - Mar 2)
-Goals: Users can manage inventory
+---
 
-Sprint Deliverable: ✅ Users can sign up, log in, add/manage inventory
-Testing Focus: Unit tests for API endpoints, component tests for forms
+## 🚀 Running Locally
 
-### Sprint 2: Recipe Search & Matching (Weeks 4-5: Mar 3-16)
-Goals: Users can find recipes based on inventory
+To run the full PantryPal ecosystem locally, you will need to open **three** separate terminals to run the frontend UI and the two local Node backend APIs.
 
-Sprint Deliverable: ✅ Full recipe discovery workflow: inventory → search → view → shopping list
-Testing Focus: Integration tests for recipe matching, E2E tests for search flow
+### 1. Installation
 
-### Sprint 3: Receipt Scanning (LLM Integration) (Weeks 6-7: Mar 17-30)
-Goals: Automate inventory entry via receipt scanning
-⚠️ HIGH PRIORITY SPRINT - All hands on deck for critical feature
-
-Sprint Deliverable: ✅ Receipt scanning works with 80%+ accuracy on common grocery receipts
-Critical Success Factors:
-
-Choose LLM early (recommend: Claude 3.5 Sonnet or GPT-4 Vision)
-- Build robust error handling from day 1
-- Always provide manual override option
-- Focus on common grocery store formats first
-- Test with real receipts continuously
-
-Risk Mitigation:
-- Parallel track: Keep manual entry as primary method
-- Budget for LLM API costs (~-100 for testing phase)
-- Have fallback to manual entry if parsing fails
-- Don't block other features on receipt scanning success
-
-
-### Sprint 4: Community Features & Expiration Tracking (Week 8: Mar 31 - Apr 6) (IF TIME PERMITS)
-Goals: Social features and waste reduction tools 
-
-Sprint Deliverable: ✅ Users can share recipe results, get expiration alerts, browse community feed
-Testing Focus: E2E tests for complete user journeys, performance testing
-
-### Sprint 5: Polish, Testing & Documentation (Week 9-10: Apr 7-20)
-Goals: Production-ready application with comprehensive documentation
-ALL TEAM - Focus on Quality
-Week 9: Testing & Bug Fixes
-Week 10: Documentation & Deployment
-
-Sprint Deliverable: ✅ Production-ready app, complete documentation, presentation materials
-
-## Run Locally
+First, clone the repository and install all Node dependencies:
 
 ```bash
 npm install
-npm run dev
 ```
 
-This UI proxies API calls to two local Node servers:
+### 2. Environment Variables
 
-```bash
-npm run dev:api
-```
+Create a single `.env` file in the root of the project with the following keys for both Spoonacular and AWS access:
 
-```bash
-npm run dev:user
-```
-
-## AWS Bedrock Vision Setup (Key Hidden on Server)
-
-Feature flow:
-- Open `Scan Receipt` tab.
-- Upload an image (receipt, grocery photo, pantry/spice rack).
-- Click `Analyze with AWS`.
-- Review and edit extracted `name` and `quantity`.
-- Save to pantry.
-- JSON extraction is shown in the scan results panel.
-
-Create a `.env` file in project root:
-
-```bash
+```env
+# AWS Bedrock Vision Keys
 AWS_ACCESS_KEY_ID=your_access_key_id
 AWS_SECRET_ACCESS_KEY=your_secret_access_key
 AWS_REGION=us-east-1
 BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
 PORT=8787
-```
 
-Run two terminals in project root:
-
-```bash
-npm run dev:api
-```
-
-```bash
-npm run dev
-```
-
-## Spoonacular Setup (Recipes/Videos)
-
-Create a `.env` file in project root:
-
-```bash
+# Spoonacular API Keys
 SPOONACULAR_API_BASE_URL=https://api.spoonacular.com
 SPOONACULAR_API_KEYS=your_spoonacular_key_1,your_spoonacular_key_2
 USER_DATA_PORT=8788
 ```
 
-Start the proxy server:
+### 3. Start the Servers
 
+In your **first terminal**, start the Claude/AWS Bedrock proxy server for the Receipt Scanner:
+```bash
+npm run dev:api
+```
+
+In your **second terminal**, start the User Data and Spoonacular proxy server:
 ```bash
 npm run dev:user
 ```
+
+In your **third terminal**, start the Vite React Frontend:
+```bash
+npm run dev
+```
+
+The PantryPal application will now be accessible locally via your browser (typically `http://localhost:5173`). Happy cooking!

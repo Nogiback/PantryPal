@@ -1,5 +1,8 @@
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import path from 'node:path';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -65,31 +68,44 @@ const readRequestBody = (req) =>
     req.on('error', reject);
   });
 
-// ---- Simple local auth (file-backed) ----
-const AUTH_DATA_DIR = path.resolve(__dirname, 'data');
-const AUTH_DB_PATH = path.resolve(AUTH_DATA_DIR, 'auth.json');
+// ---- AWS DynamoDB Backend ----
+const STATE_TABLE_NAME = "pantrypal-state";
+const ddbClient = new DynamoDBClient({ region: process.env.AWS_REGION || "us-east-1" });
+const docClient = DynamoDBDocumentClient.from(ddbClient);
 
-const ensureAuthDb = () => {
-  mkdirSync(AUTH_DATA_DIR, { recursive: true });
-  if (!existsSync(AUTH_DB_PATH)) {
-    writeFileSync(AUTH_DB_PATH, JSON.stringify({ users: [], sessions: {} }, null, 2), 'utf8');
+let localCache = null;
+
+const readAuthDb = async () => {
+  try {
+    const data = await docClient.send(new GetCommand({
+      TableName: STATE_TABLE_NAME,
+      Key: { PK: "STATE", SK: "STATE" }
+    }));
+    if (data.Item && data.Item.db) {
+       localCache = data.Item.db;
+       return data.Item.db;
+    }
+  } catch (err) {
+    if (localCache) return localCache;
+    console.warn("DynamoDB Read Failed, checking for fallback...", err.message);
   }
+  return { users: [], sessions: {} };
 };
 
-const readAuthDb = () => {
-  ensureAuthDb();
-  const raw = readFileSync(AUTH_DB_PATH, 'utf8');
-  const parsed = JSON.parse(raw);
-  const users = Array.isArray(parsed.users) ? parsed.users : [];
-  const sessions = parsed.sessions && typeof parsed.sessions === 'object' ? parsed.sessions : {};
-  return { users, sessions };
-};
-
-const writeAuthDb = (db) => {
-  ensureAuthDb();
-  const tmpPath = `${AUTH_DB_PATH}.${randomBytes(6).toString('hex')}.tmp`;
-  writeFileSync(tmpPath, JSON.stringify(db, null, 2), 'utf8');
-  renameSync(tmpPath, AUTH_DB_PATH);
+const writeAuthDb = async (db) => {
+  localCache = db; 
+  try {
+    await docClient.send(new PutCommand({
+      TableName: STATE_TABLE_NAME,
+      Item: {
+        PK: "STATE",
+        SK: "STATE",
+        db
+      }
+    }));
+  } catch (err) {
+    console.warn("DynamoDB Write Failed", err.message);
+  }
 };
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
@@ -124,11 +140,11 @@ const toPublicUser = (user) => ({
   onboardingCompleted: (user?.onboardingCompleted ?? false) === true,
 });
 
-const getUserFromRequest = (req) => {
+const getUserFromRequest = async (req) => {
   const token = getBearerToken(req);
   if (!token) return { token: '', user: null };
 
-  const db = readAuthDb();
+  const db = await readAuthDb();
   const session = db.sessions[token];
   if (!session?.userId) return { token, user: null };
 
@@ -186,12 +202,28 @@ const SPOONACULAR_API_BASE_URL =
   process.env.SPOONACULAR_API_BASE_URL ||
   process.env.VITE_SPOONACULAR_API_BASE_URL ||
   'https://api.spoonacular.com';
-const SPOONACULAR_API_KEYS = String(
+let SPOONACULAR_API_KEYS = String(
   process.env.SPOONACULAR_API_KEY || process.env.SPOONACULAR_API_KEYS || process.env.VITE_SPOONACULAR_API_KEY || '',
 )
   .split(',')
   .map((k) => k.trim())
   .filter(Boolean);
+
+if (SPOONACULAR_API_KEYS.length === 0) {
+  const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "us-east-1" });
+  try {
+    const param = await ssmClient.send(new GetParameterCommand({
+      Name: "/pantrypal/SPOONACULAR_API_KEYS",
+      WithDecryption: true
+    }));
+    if (param.Parameter && param.Parameter.Value) {
+      SPOONACULAR_API_KEYS = param.Parameter.Value.split(',').map(k => k.trim()).filter(Boolean);
+      console.log("[user-data] Successfully loaded Spoonacular API Keys from AWS SSM Parameter Store");
+    }
+  } catch (err) {
+    console.warn("[user-data] Failed to load keys from AWS SSM:", err.message);
+  }
+}
 
 console.log(
   `[user-data] env=${loadedEnvPath ?? 'none'} spoonacularKeys=${SPOONACULAR_API_KEYS.length} baseUrl=${SPOONACULAR_API_BASE_URL}`,
@@ -413,7 +445,7 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const db = readAuthDb();
+      const db = await readAuthDb();
       if (db.users.some((u) => u.email === email)) {
         sendJson(res, 409, { error: 'Email already exists.' });
         return;
@@ -433,7 +465,7 @@ const server = createServer(async (req, res) => {
 
       const token = newToken();
       db.sessions[token] = { userId: user.id, createdAt: new Date().toISOString() };
-      writeAuthDb(db);
+      await writeAuthDb(db);
 
       sendJson(res, 200, { token, user: toPublicUser(user) });
     } catch (error) {
@@ -454,7 +486,7 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const db = readAuthDb();
+      const db = await readAuthDb();
       const user = db.users.find((u) => u.email === email);
       if (!user || !verifyPassword(password, user.passwordHash)) {
         sendJson(res, 401, { error: 'Invalid email or password.' });
@@ -463,7 +495,7 @@ const server = createServer(async (req, res) => {
 
       const token = newToken();
       db.sessions[token] = { userId: user.id, createdAt: new Date().toISOString() };
-      writeAuthDb(db);
+      await writeAuthDb(db);
 
       sendJson(res, 200, { token, user: toPublicUser(user) });
     } catch (error) {
@@ -474,7 +506,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && req.url === '/api/auth/me') {
-    const { user } = getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
     if (!user) {
       sendJson(res, 401, { error: 'Unauthorized.' });
       return;
@@ -485,7 +517,7 @@ const server = createServer(async (req, res) => {
 
   // ---- Onboarding ----
   if (req.method === 'GET' && req.url === '/api/onboarding/me') {
-    const { user } = getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
     if (!user) {
       sendJson(res, 401, { error: 'Unauthorized.' });
       return;
@@ -499,7 +531,7 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'POST' && req.url === '/api/onboarding/me') {
     try {
-      const { token, user } = getUserFromRequest(req);
+      const { token, user } = await getUserFromRequest(req);
       if (!user) {
         sendJson(res, 401, { error: 'Unauthorized.' });
         return;
@@ -509,7 +541,7 @@ const server = createServer(async (req, res) => {
       const payload = JSON.parse(raw);
       const onboarding = sanitizeOnboardingPayload(payload);
 
-      const db = readAuthDb();
+      const db = await readAuthDb();
       const session = db.sessions[token];
       if (!session?.userId) {
         sendJson(res, 401, { error: 'Unauthorized.' });
@@ -528,7 +560,7 @@ const server = createServer(async (req, res) => {
         onboardingCompleted: true,
         onboardingCompletedAt: new Date().toISOString(),
       };
-      writeAuthDb(db);
+      await writeAuthDb(db);
 
       sendJson(res, 200, { ok: true, onboardingCompleted: true });
     } catch (error) {
@@ -540,7 +572,7 @@ const server = createServer(async (req, res) => {
 
   // ---- Pantry ----
   if (req.method === 'GET' && req.url === '/api/pantry/me') {
-    const { user } = getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
     if (!user) {
       sendJson(res, 401, { error: 'Unauthorized.' });
       return;
@@ -553,7 +585,7 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'POST' && req.url === '/api/pantry/me') {
     try {
-      const { token, user } = getUserFromRequest(req);
+      const { token, user } = await getUserFromRequest(req);
       if (!user) {
         sendJson(res, 401, { error: 'Unauthorized.' });
         return;
@@ -563,7 +595,7 @@ const server = createServer(async (req, res) => {
       const payload = JSON.parse(raw);
       const pantry = sanitizePantryPayload(payload);
 
-      const db = readAuthDb();
+      const db = await readAuthDb();
       const session = db.sessions[token];
       if (!session?.userId) {
         sendJson(res, 401, { error: 'Unauthorized.' });
@@ -577,7 +609,7 @@ const server = createServer(async (req, res) => {
       }
 
       db.users[userIndex] = { ...db.users[userIndex], pantry };
-      writeAuthDb(db);
+      await writeAuthDb(db);
 
       sendJson(res, 200, { ok: true, pantry, items: pantry });
     } catch (error) {
