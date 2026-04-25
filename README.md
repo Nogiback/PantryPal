@@ -49,3 +49,12 @@ Unlike the backend which requires manual deployment commands, the frontend is co
 3. Push to GitHub: `git push origin master`
 
 AWS Amplify will automatically detect the push, install dependencies, run the Vite build, and deploy the new static assets to the global CDN.
+
+## Roadmap / Future Features
+
+As PantryPal continues to grow, we have an exciting roadmap of features planned to enhance the user experience and bring more automation into the kitchen. If the project picks up steam, look forward to the following updates:
+
+- **Mobile Version**: A dedicated native mobile application (iOS/Android) for managing your pantry on the go.
+- **Grocery Store Integrations**: Direct connections with major grocery retailers (e.g., Walmart, Instacart) to automatically restock missing ingredients.
+- **Household Device Sync**: Integration with smart fridges, barcode scanners, and smart home devices for frictionless inventory tracking.
+- **Social Media & Community**: Features to share favorite recipes, meal plans, and collaborate on pantry management with friends and family.
