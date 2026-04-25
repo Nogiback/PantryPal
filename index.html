@@ -7,6 +7,11 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/app-logo.png?v=3" />
     <link rel="shortcut icon" href="/app-logo.png?v=3" />
     <link rel="apple-touch-icon" href="/app-logo.png?v=3" />
+    <script>
+      if (typeof global === 'undefined') {
+        window.global = window;
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

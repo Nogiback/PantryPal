@@ -11,6 +11,8 @@ import { useAppSelector } from "@/store/hooks";
 import { useAppDispatch } from "@/store/hooks";
 import { fetchPreferences } from "@/store/slices/preferencesSlice";
 import { getAuthMode, getLocalPreferences, setLocalPreferences } from "@/lib/localAuth";
+import { apiGet, apiPatch } from "@/lib/api";
+import { getAuthToken } from "@/lib/cognito";
 
 type Diet =
   | "No Restrictions"
@@ -205,7 +207,7 @@ export function ProfileView() {
 
     (async () => {
       try {
-        const token = localStorage.getItem("auth_token");
+        const token = await getAuthToken();
         if (!token) {
           setError("You are signed out. Please log in again.");
           return;
@@ -236,26 +238,34 @@ export function ProfileView() {
           return;
         }
 
-        const [meRes, onboardRes] = await Promise.all([
-          fetch("/api/auth/me", { method: "GET", headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/onboarding/me", { method: "GET", headers: { Authorization: `Bearer ${token}` } }),
-        ]);
-
-        if (!meRes.ok) throw new Error("Could not load profile.");
-        if (!onboardRes.ok) throw new Error("Could not load preferences.");
-
-        const meData = (await meRes.json().catch(() => ({}))) as { user?: unknown };
-        const onboardData = (await onboardRes.json().catch(() => ({}))) as { onboarding?: unknown; onboardingCompleted?: unknown };
+        const data = await apiGet("/me/profile");
 
         if (cancelled) return;
-        const publicUser = (meData.user ?? null) as { id?: string; name?: string; email?: string } | null;
-        const onboarding = normalizeOnboarding(onboardData.onboarding);
+        const publicUser = {
+          id: data.id,
+          name: data.displayName || data.firstName || undefined,
+          email: data.email,
+        };
+
+        const dietType = Array.isArray(data.preferenceProfile?.dietSignals?.dietType) && data.preferenceProfile.dietSignals.dietType.length > 0 ? data.preferenceProfile.dietSignals.dietType[0] : "No Restrictions";
+        const allergies = Array.isArray(data.preferenceProfile?.dietSignals?.allergies) ? data.preferenceProfile.dietSignals.allergies : [];
+        const customAvoid = typeof data.preferenceProfile?.dislikes?.csv === "string" && data.preferenceProfile.dislikes.csv ? data.preferenceProfile.dislikes.csv.split(", ").filter(Boolean) : [];
+        const flavors = typeof data.preferenceProfile?.likes?.csv === "string" && data.preferenceProfile.likes.csv ? data.preferenceProfile.likes.csv.split(", ").filter(Boolean) : [];
+        const goals = typeof data.preferenceProfile?.dietSignals?.notes === "string" && data.preferenceProfile.dietSignals.notes ? data.preferenceProfile.dietSignals.notes.split(", ").filter(Boolean) : [];
+
+        const onboarding: OnboardingPayload = {
+          dietaryPreference: dietType as Diet,
+          allergies,
+          customAvoid,
+          taste: { flavors: flavors as Flavor[], spiceLevel: 2 },
+          goals,
+        };
 
         setUser(publicUser);
         setSaved(onboarding);
         setDraft(onboarding);
         setQuestionDraft(onboarding);
-        setOnboardingCompleted(onboardData.onboardingCompleted === true);
+        setOnboardingCompleted(data.onboardingCompleted === true);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Could not load profile.");
@@ -318,7 +328,7 @@ export function ProfileView() {
     setError(null);
     setMessage(null);
 
-    const token = localStorage.getItem("auth_token");
+    const token = await getAuthToken();
     if (!token) {
       const msg = "You are signed out. Please log in again.";
       setError(msg);
@@ -337,18 +347,16 @@ export function ProfileView() {
       return true;
     }
 
-    const res = await fetch("/api/onboarding/me", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = (await res.json().catch(() => ({}))) as { error?: unknown };
-    if (!res.ok) {
-      const msg = typeof data.error === "string" ? data.error : "Could not save preferences.";
+    try {
+      await apiPatch("/me/profile", {
+        dietType: [payload.dietaryPreference],
+        allergies: payload.allergies,
+        disliked: payload.customAvoid.join(", "),
+        likes: payload.taste.flavors.join(", "),
+        notes: payload.goals.join(", ")
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not save preferences.";
       setError(msg);
       onFailure?.(msg);
       return false;

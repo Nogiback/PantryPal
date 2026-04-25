@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAppDispatch } from "@/store/hooks";
 import { fetchPreferences } from "@/store/slices/preferencesSlice";
-import { getAuthMode, getLocalPreferences, setLocalPreferences } from "@/lib/localAuth";
+import { apiPatch, apiPost } from "@/lib/api";
 
 type Diet =
   | "No Restrictions"
@@ -60,54 +60,7 @@ const stepMeta = [
 
 const uiSpring = { type: "spring", stiffness: 500, damping: 35 } as const;
 
-type OnboardingPayload = {
-  dietaryPreference: Diet;
-  allergies: string[];
-  customAvoid: string[];
-  taste: { flavors: Flavor[]; spiceLevel: number };
-  goals: string[];
-};
 
-const emptyOnboarding = (): OnboardingPayload => ({
-  dietaryPreference: "No Restrictions",
-  allergies: [],
-  customAvoid: [],
-  taste: { flavors: [], spiceLevel: 2 },
-  goals: [],
-});
-
-const normalizeOnboarding = (raw: unknown): OnboardingPayload => {
-  const base = emptyOnboarding();
-  if (!raw || typeof raw !== "object") return base;
-  const value = raw as Partial<OnboardingPayload>;
-
-  const dietaryPreference =
-    typeof value.dietaryPreference === "string" && (dietOptions as string[]).includes(value.dietaryPreference)
-      ? (value.dietaryPreference as Diet)
-      : base.dietaryPreference;
-
-  const allergies = Array.isArray(value.allergies) ? value.allergies.filter((x): x is string => typeof x === "string") : [];
-  const customAvoid = Array.isArray(value.customAvoid)
-    ? value.customAvoid.filter((x): x is string => typeof x === "string")
-    : [];
-
-  const tasteRaw = (value.taste ?? {}) as Partial<OnboardingPayload["taste"]>;
-  const flavors = Array.isArray(tasteRaw.flavors)
-    ? tasteRaw.flavors.filter((x): x is Flavor => typeof x === "string" && (flavorOptions as string[]).includes(x))
-    : [];
-  const spiceLevelNum = Number(tasteRaw.spiceLevel ?? base.taste.spiceLevel);
-  const spiceLevel = Number.isFinite(spiceLevelNum) ? Math.max(0, Math.min(4, Math.round(spiceLevelNum))) : base.taste.spiceLevel;
-
-  const goals = Array.isArray(value.goals) ? value.goals.filter((x): x is string => typeof x === "string") : [];
-
-  return {
-    dietaryPreference,
-    allergies,
-    customAvoid,
-    taste: { flavors, spiceLevel },
-    goals,
-  };
-};
 
 const TogglePill = ({
   label,
@@ -194,44 +147,7 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
   const [goals, setGoals] = useState<string[]>([]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        if (getAuthMode() === "local") {
-          const local = getLocalPreferences();
-          const normalized = normalizeOnboarding(local.onboarding);
-          if (cancelled) return;
-          setDietaryPreference(normalized.dietaryPreference);
-          setAllergies(normalized.allergies);
-          setCustomAvoid(normalized.customAvoid);
-          setFlavors(normalized.taste.flavors);
-          setSpiceLevel(normalized.taste.spiceLevel);
-          setGoals(normalized.goals);
-          return;
-        }
-
-        const token = localStorage.getItem("auth_token");
-        if (!token) return;
-        const res = await fetch("/api/onboarding/me", { method: "GET", headers: { Authorization: `Bearer ${token}` } });
-        if (!res.ok) return;
-        const data = (await res.json().catch(() => ({}))) as { onboarding?: unknown };
-        const normalized = normalizeOnboarding(data.onboarding);
-        if (cancelled) return;
-        setDietaryPreference(normalized.dietaryPreference);
-        setAllergies(normalized.allergies);
-        setCustomAvoid(normalized.customAvoid);
-        setFlavors(normalized.taste.flavors);
-        setSpiceLevel(normalized.taste.spiceLevel);
-        setGoals(normalized.goals);
-      } catch {
-        // Ignore; onboarding can start from defaults.
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    // We rely on App.tsx which hydrates everything into Redux.
   }, []);
 
   const header = useMemo(() => {
@@ -263,12 +179,6 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
     setError(null);
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("auth_token");
-      if (!token) {
-        setError("You are signed out. Please log in again.");
-        return;
-      }
-
       const payload = {
         dietaryPreference,
         allergies,
@@ -277,34 +187,21 @@ export function OnboardingView({ onFinish }: { onFinish: () => void }) {
         goals,
       };
 
-      if (getAuthMode() === "local") {
-        setLocalPreferences(payload);
-        dispatch(fetchPreferences());
-        setIsComplete(true);
-        return;
-      }
-
-      const res = await fetch("/api/onboarding/me", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+      await apiPatch("/me/profile", {
+        dietType: [dietaryPreference],
+        allergies,
+        disliked: customAvoid.join(", "),
+        likes: flavors.join(", "),
+        notes: goals.join(", ")
       });
-
-      const data = (await res.json().catch(() => ({}))) as { error?: unknown };
-      if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Could not save onboarding.");
-        return;
-      }
+      await apiPost("/me/onboarding/complete", {});
 
       const stored = localStorage.getItem("auth_user");
       const parsed = stored ? (JSON.parse(stored) as Record<string, unknown> | null) : null;
-      const updated = { ...(parsed || {}), onboardingCompleted: true, onboarding: payload };
+      const updated = { ...(parsed || {}), onboardingCompleted: true, ...payload };
       localStorage.setItem("auth_user", JSON.stringify(updated));
 
-      // Re-fetch from server so Redux matches what is actually stored in auth.json.
+      // Re-fetch from server so Redux matches what is actually stored
       dispatch(fetchPreferences());
 
       setIsComplete(true);

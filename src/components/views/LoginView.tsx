@@ -2,7 +2,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { cacheLocalAuthUser, createLocalSession, getStoredPublicUser, loginLocalUser, setAuthMode } from "@/lib/localAuth";
+import { login } from "@/lib/cognito";
+import { apiPost } from "@/lib/api";
 
 interface LoginViewProps {
   onBack: () => void;
@@ -17,84 +18,26 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const completeLocalLogin = () => {
-    const fallbackUser = loginLocalUser({ email, password });
-    createLocalSession({
-      id: fallbackUser.id,
-      name: fallbackUser.name,
-      email: fallbackUser.email,
-      onboardingCompleted: fallbackUser.onboardingCompleted,
-      onboarding: fallbackUser.onboarding,
-    });
-    onSuccess();
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!email.trim()) {
-      setError("Please enter your email.");
-      return;
-    }
-    if (!password) {
-      setError("Please enter your password.");
-      return;
-    }
+    if (!email.trim()) return setError("Please enter your email.");
+    if (!password) return setError("Please enter your password.");
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        token?: unknown;
-        user?: unknown;
-        error?: unknown;
-      };
-
-      if (!response.ok) {
-        if (response.status >= 500) {
-          completeLocalLogin();
-          return;
-        }
-        setError(typeof data.error === "string" ? data.error : "Login failed.");
-        return;
-      }
-
-      if (typeof data.token === "string") {
-        localStorage.setItem("auth_token", data.token);
-      }
-      localStorage.setItem("auth_user", JSON.stringify(data.user ?? null));
-      setAuthMode("server");
-      if (data.user && typeof data.user === "object" && "email" in data.user && "name" in data.user && "id" in data.user) {
-        cacheLocalAuthUser(
-          data.user as { id: string; name: string; email: string; onboardingCompleted?: boolean; onboarding?: unknown },
-          password,
-        );
-      }
-
+      await login(email, password);
+      
+      // Bootstrap to ensure their DB profile exists/loads
+      await apiPost("/me/bootstrap", {});
+      
       onSuccess();
     } catch (err) {
-      try {
-        completeLocalLogin();
-        return;
-      } catch {
-        const storedUser = getStoredPublicUser();
-        if (storedUser?.email?.toLowerCase() === email.trim().toLowerCase()) {
-          cacheLocalAuthUser(storedUser, password);
-          createLocalSession(storedUser);
-          onSuccess();
-          return;
-        }
-      }
-
       setError(
         err instanceof Error
-          ? `${err.message} Pantry Pal can fall back locally after you have logged in once on this device.`
-          : "Login failed. Start `npm run dev:user` if the local auth server is not running."
+          ? err.message
+          : "Login failed."
       );
     } finally {
       setIsSubmitting(false);
@@ -185,25 +128,10 @@ export function LoginView({ onBack, onSuccess, onGoToSignup }: LoginViewProps) {
               </button>
             </form>
 
-            <div className="auth-support-card">
-              <p className="text-[0.96rem] font-semibold text-[#10120f]">Having trouble logging in?</p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                <button type="button" className="font-semibold text-[#10120f]">Chat with support</button>
-                <span className="text-[#e8eaec]">|</span>
-                <button type="button" className="text-[rgba(16,18,15,0.48)]">Run npm run dev:user</button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-3 text-sm text-[rgba(16,18,15,0.62)]">
+            <div className="flex items-center justify-between gap-3 text-sm text-[rgba(16,18,15,0.62)] mt-6">
               <span>New to PantryPal?</span>
               <button type="button" className="font-semibold text-[#10120f]" onClick={onGoToSignup}>
                 Create an Account
-              </button>
-            </div>
-
-            <div className="pt-3 text-center">
-              <button type="button" className="text-sm font-medium text-[#10120f] underline underline-offset-4">
-                See Why Home Cooks Choose PantryPal
               </button>
             </div>
           </div>

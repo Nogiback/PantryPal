@@ -82,8 +82,21 @@ const getQuantityLabel = (item: Ingredient) => {
   return parts.length > 0 ? parts.join(" ") : "1 Item";
 };
 
+const mapBackendCategory = (category: string) => {
+  const lower = category.toLowerCase();
+  if (lower === "produce") return "Produce";
+  if (lower === "dairy") return "Dairy & Eggs";
+  if (lower === "meat") return "Meat & Poultry";
+  if (lower === "seafood") return "Seafood";
+  if (lower === "spices") return "Spices & Herbs";
+  if (lower === "condiments") return "Condiments & Oils";
+  return "Other";
+};
+
 const getItemCategory = (item: Ingredient) => {
-  if (item.category && item.category !== "Other") return item.category;
+  if (item.category && item.category.toLowerCase() !== "other") {
+    return mapBackendCategory(item.category);
+  }
   return categorizeIngredient(item.name);
 };
 

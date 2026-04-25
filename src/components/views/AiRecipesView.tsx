@@ -20,11 +20,14 @@ export function AiRecipesView() {
     dispatch(fetchAiRecipes());
   };
 
-  const isPlanned = (title: string) => plannedRecipes.some(r => r.id === title && r.sourceType === 'ai');
+  const isPlanned = (title: string) => plannedRecipes.some(r => r.title === title);
 
   const toggleMealPlan = (recipe: AiRecipe) => {
     if (isPlanned(recipe.title)) {
-      dispatch(removeRecipeFromPlan(recipe.title));
+      const plannedItem = plannedRecipes.find(r => r.title === recipe.title);
+      if (plannedItem) {
+        dispatch(removeRecipeFromPlan(plannedItem.id));
+      }
     } else {
       const required = recipe.ingredients.map(ing => ({
         name: ing.name,
@@ -111,8 +114,9 @@ export function AiRecipesView() {
           ) : (
             <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 pb-20">
               {aiRecipes.map((recipe, index) => {
-                const usedCount = recipe.ingredients.filter(i => i.fromPantry).length;
-                const totalCount = recipe.ingredients.length;
+                const ingredientsList = recipe.ingredients || [];
+                const usedCount = ingredientsList.filter(i => i.fromPantry).length;
+                const totalCount = ingredientsList.length;
                 
                 return (
                   <motion.div
@@ -130,8 +134,9 @@ export function AiRecipesView() {
                             loading="lazy"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-[#fcfcfc]">
-                            <ChefHat className="h-12 w-12 text-[rgba(16,18,15,0.24)]" />
+                          <div className="flex h-full w-full flex-col items-center justify-center bg-muted/20 animate-pulse">
+                            <Sparkles className="h-8 w-8 text-primary/40 mb-2" />
+                            <span className="text-xs font-semibold text-muted-foreground/60 tracking-wider uppercase">Cooking photo...</span>
                           </div>
                         )}
                         <div className="absolute inset-x-0 bottom-0 bg-black/60 p-6 pt-16">
@@ -169,7 +174,7 @@ export function AiRecipesView() {
                               </span>
                             </div>
                             <ul className="space-y-2.5 rounded-2xl border border-[#e8eaec] bg-white p-4">
-                              {recipe.ingredients.map((ing, i) => (
+                              {ingredientsList.map((ing, i) => (
                                 <li key={i} className="flex items-start gap-2.5 text-sm">
                                   {ing.fromPantry ? (
                                     <CheckCircle2 className="h-4.5 w-4.5 text-primary shrink-0 mt-0.5" />
@@ -189,7 +194,7 @@ export function AiRecipesView() {
                               Instructions
                             </h4>
                             <ol className="space-y-4 text-sm text-foreground/90 list-none">
-                              {recipe.instructions.map((step, i) => (
+                              {(recipe.instructions || []).map((step, i) => (
                                 <li key={i} className="flex gap-3 leading-relaxed">
                                   <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full border border-[#e8eaec] bg-white text-xs font-bold text-[#10120f]">
                                     {i + 1}

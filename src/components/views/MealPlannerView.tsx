@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { CalendarDays, CheckCircle2, Circle, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { removeRecipeFromPlan, setShoppingListText, clearPlan } from "@/store/slices/mealPlannerSlice";
+import { cookRecipeThunk } from "@/store/slices/ingredientsSlice";
+import { apiPost } from "@/lib/api";
+import { CookResultModal, type CookResult } from "../CookResultModal";
 
 export function MealPlannerView() {
   const dispatch = useAppDispatch();
@@ -14,6 +17,10 @@ export function MealPlannerView() {
   const pantryIngredients = useAppSelector((state) => state.ingredients.items);
 
   const [copied, setCopied] = useState(false);
+  const [activeRecipe, setActiveRecipe] = useState<any>(null);
+  const [cookResult, setCookResult] = useState<CookResult | null>(null);
+  const [isCookModalOpen, setIsCookModalOpen] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const { missing, have } = useMemo(() => {
     const requiredMap = new Map<string, { quantities: string[] }>();
@@ -61,7 +68,45 @@ export function MealPlannerView() {
     dispatch(removeRecipeFromPlan(id));
   };
 
+  const handleCookPreview = async (recipe: any) => {
+    setActiveRecipe(recipe);
+    setIsConfirming(true);
+    try {
+      const payload = recipe.sourceType === 'api' 
+        ? { recipeId: Number(recipe.id), dryRun: true }
+        : { ingredients: recipe.requiredIngredients, dryRun: true };
+      
+      const res = await apiPost("/recipes/cook", payload);
+      setCookResult(res);
+      setIsCookModalOpen(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
+  const handleConfirmCook = async () => {
+    if (!activeRecipe) return;
+    setIsConfirming(true);
+    try {
+      if (activeRecipe.sourceType === 'api') {
+        await dispatch(cookRecipeThunk({ recipeId: Number(activeRecipe.id) })).unwrap();
+      } else {
+        await dispatch(cookRecipeThunk({ ingredients: activeRecipe.requiredIngredients })).unwrap();
+      }
+      dispatch(removeRecipeFromPlan(activeRecipe.id));
+      setIsCookModalOpen(false);
+      setActiveRecipe(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   return (
+    <>
     <motion.div
       className="flex flex-col h-[calc(100vh-10rem)] space-y-6"
       initial={{ opacity: 0, y: 20 }}
@@ -127,9 +172,19 @@ export function MealPlannerView() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mt-4 font-medium">
-                            {recipe.requiredIngredients.length} Ingredients Checked
-                          </p>
+                          <div className="flex items-center justify-between mt-4">
+                            <p className="text-sm text-muted-foreground font-medium">
+                              {recipe.requiredIngredients.length} Ingredients Checked
+                            </p>
+                            <Button 
+                              size="sm" 
+                              className="rounded-full bg-[#10120f] hover:bg-[#10120f]/80 text-white font-bold"
+                              onClick={() => handleCookPreview(recipe)}
+                              disabled={isConfirming && activeRecipe?.id === recipe.id}
+                            >
+                              {isConfirming && activeRecipe?.id === recipe.id ? "Checking..." : "Cook Recipe"}
+                            </Button>
+                          </div>
                         </div>
                       </Card>
                     ))}
@@ -158,9 +213,9 @@ export function MealPlannerView() {
                   ) : (
                     <ul className="space-y-3">
                       {missing.map((item, idx) => (
-                        <li key={idx} className="flex flex-col gap-1 rounded-xl border border-[#10120f] bg-[#10120f] p-3 text-sm">
-                          <span className="font-bold capitalize text-white">{item.name}</span>
-                          <span className="text-xs font-medium text-[rgba(255,255,255,0.62)]">{item.amounts}</span>
+                        <li key={idx} className="flex flex-col gap-1 rounded-xl border border-[#e8eaec] bg-[#f7faf7] p-3 text-sm">
+                          <span className="font-bold capitalize text-[#10120f]">{item.name}</span>
+                          <span className="text-xs font-medium text-muted-foreground">{item.amounts}</span>
                         </li>
                       ))}
                     </ul>
@@ -177,12 +232,12 @@ export function MealPlannerView() {
                   ) : (
                     <ul className="space-y-3">
                       {have.map((item, idx) => (
-                        <li key={idx} className="flex flex-col gap-1 rounded-xl border border-[#10120f] bg-[#10120f] p-3 text-sm opacity-100">
+                        <li key={idx} className="flex flex-col gap-1 rounded-xl border border-[#e8eaec] bg-[#f7faf7] p-3 text-sm opacity-100">
                           <div className="flex justify-between items-start gap-2">
-                            <span className="font-bold capitalize text-white line-through">{item.name}</span>
+                            <span className="font-bold capitalize text-[#10120f] line-through">{item.name}</span>
                             <span className="text-[10px] font-bold text-green-800 bg-green-200/70 px-2 py-0.5 rounded-sm">In Pantry</span>
                           </div>
-                          <span className="text-xs font-medium text-[rgba(255,255,255,0.62)]">{item.amounts}</span>
+                          <span className="text-xs font-medium text-muted-foreground">{item.amounts}</span>
                         </li>
                       ))}
                     </ul>
@@ -196,5 +251,15 @@ export function MealPlannerView() {
         </ScrollArea>
       </div>
     </motion.div>
+
+    <CookResultModal
+      isOpen={isCookModalOpen}
+      onClose={() => setIsCookModalOpen(false)}
+      onConfirm={handleConfirmCook}
+      result={cookResult}
+      recipeTitle={activeRecipe?.title || ""}
+      isConfirming={isConfirming}
+    />
+    </>
   );
 }

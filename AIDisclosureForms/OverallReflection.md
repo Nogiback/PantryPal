@@ -1,0 +1,3 @@
+# Overall Reflection
+
+Using AI tools like Codex and Antigravity/Gemini fundamentally accelerated our development cycle by acting as a responsive pair programmer. It drastically reduced the time spent debugging obscure deployment issues and writing boilerplate code for Terraform and React components. It assisted in our understanding of the issues and helped us to resolve them quickly. The tool allowed us to focus more on high-level architecture and feature design rather than getting stuck on low-level syntax and infrastructure bugs. However, we still needed to review and adjust the generated code to ensure it fit our project requirements. Overall, the AI tools acted as a helpful assistant rather than a complete replacement for our own understanding.

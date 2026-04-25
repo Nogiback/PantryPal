@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/store/hooks";
 import { addIngredient, savePantry } from "@/store/slices/ingredientsSlice";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiPost } from "@/lib/api";
 
 interface ExtractedItem {
   id: string;
@@ -25,14 +26,7 @@ interface ExtractedItem {
 
 const UNITS = ["pcs", "g", "kg", "oz", "lb", "ml", "L", "cup", "tbsp", "tsp"];
 
-interface AwsResponse {
-  text?: string;
-}
-
-interface PreparedImagePayload {
-  base64: string;
-  mimeType: string;
-}
+// No longer need AwsResponse and PreparedImagePayload here
 
 export function ScanView() {
   const dispatch = useAppDispatch();
@@ -95,33 +89,7 @@ export function ScanView() {
     return "Failed to analyze image. Please try again.";
   };
 
-  // Convert image bytes into base64 because backend expects JSON payload,
-  // not multipart/form-data.
-  const blobToBase64 = (blob: Blob) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result;
-        if (typeof result !== "string") {
-          reject(new Error("Unable to process selected image."));
-          return;
-        }
-
-        const base64 = result.split(",")[1];
-        if (!base64) {
-          reject(new Error("Unable to process selected image."));
-          return;
-        }
-
-        resolve(base64);
-      };
-      reader.onerror = () =>
-        reject(new Error("Unable to read selected image data."));
-      reader.readAsDataURL(blob);
-    });
-
-  // Resize large images before upload to improve speed and lower model payload size.
-  // If the image is already small enough, return it as-is.
+  // Resize large images before upload to improve speed and lower payload size.
   const resizeImageIfNeeded = (file: File, maxDimension = 1500) =>
     new Promise<Blob>((resolve, reject) => {
       const objectUrl = URL.createObjectURL(file);
@@ -177,81 +145,48 @@ export function ScanView() {
       image.src = objectUrl;
     });
 
-  const prepareImagePayload = async (
-    file: File,
-  ): Promise<PreparedImagePayload> => {
-    const processedImage = await resizeImageIfNeeded(file, 1500);
-    const base64 = await blobToBase64(processedImage);
-    const mimeType = processedImage.type || file.type || "image/jpeg";
-    return { base64, mimeType };
-  };
-
-  // Parse model output safely and tolerate markdown code fences if returned.
-  // Then normalize each row into the local editable item shape.
-  const safeParseJsonItems = (rawText: string): ExtractedItem[] => {
-    const cleaned = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    const parsed = JSON.parse(cleaned) as {
-      items?: Array<{ name?: unknown; quantity?: unknown; unit?: unknown; expiryDate?: unknown }>;
-    };
-    const rows = Array.isArray(parsed.items) ? parsed.items : [];
-
-    return rows
-      .map((item) => {
-        let qty = typeof item.quantity === "string" ? item.quantity.trim() : "1";
-        if (!qty || qty.toLowerCase() === "unknown") qty = "1";
-        
-        return {
-          id: crypto.randomUUID(),
-          name: typeof item.name === "string" ? item.name.trim() : "",
-          quantity: qty,
-          unit: typeof item.unit === "string" ? item.unit.trim() : "pcs",
-          expiryDate: typeof item.expiryDate === "string" ? item.expiryDate.trim() : "",
-          inFreezer: false,
-        };
-      })
-      // Ignore empty names so users only see valid candidate rows.
-      .filter((item) => item.name.length > 0);
-  };
-
-  // Send image to backend endpoint that talks to AWS Bedrock,
-  // then parse the returned JSON text into editable rows.
+  // Send image to backend endpoint via S3 presigned URL
   const extractItemsWithAws = async (file: File): Promise<ExtractedItem[]> => {
-    const imagePayload = await prepareImagePayload(file);
-    const response = await fetch("/api/scan/aws", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        imageBase64: imagePayload.base64,
-        mimeType: imagePayload.mimeType,
-      }),
+    // 1. Get pre-signed URL from our real backend
+    const mimeType = file.type || "image/jpeg";
+    const filename = file.name || "scan.jpg";
+    const { uploadUrl, imageKey } = await apiPost("/me/pantry/upload-url", {
+      filename,
+      contentType: mimeType,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `AWS request failed (${response.status}): ${errorText}. Make sure dev API server is running.`,
-      );
+    // 2. Upload file to S3
+    const processedImage = await resizeImageIfNeeded(file, 1500);
+    const uploadRes = await fetch(uploadUrl, {
+      method: "PUT",
+      body: processedImage,
+      headers: {
+        "Content-Type": mimeType,
+      },
+    });
+
+    if (!uploadRes.ok) {
+      throw new Error("Failed to upload image for analysis.");
     }
 
-    const data = (await response.json()) as AwsResponse;
-    const rawText = data.text;
-    if (!rawText) {
-      throw new Error("AWS model returned an empty response.");
-    }
+    // 3. Ask backend to parse the uploaded image
+    const { items: parsedItems } = await apiPost("/me/pantry/parse-image", {
+      imageKey,
+    });
 
-    const items = safeParseJsonItems(rawText);
-    if (items.length === 0) {
+    if (!parsedItems || parsedItems.length === 0) {
       throw new Error("No grocery items were detected in this image.");
     }
 
-    return items;
+    // 4. Map back to UI state
+    return parsedItems.map((item: any) => ({
+      id: crypto.randomUUID(),
+      name: item.name || "",
+      quantity: String(item.quantity || "1"),
+      unit: item.unit || "pcs",
+      expiryDate: "",
+      inFreezer: false,
+    }));
   };
 
   // Main scan action:

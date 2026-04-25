@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { Ingredient } from '@/types';
-import { getAuthMode, getLocalPantry, setLocalPantry } from '@/lib/localAuth';
+import { apiGet, apiPost, apiDelete } from '@/lib/api';
 
 interface IngredientsState {
   items: Ingredient[];
@@ -27,6 +27,57 @@ type AddIngredientPayload = {
   inFreezer?: boolean;
 };
 
+export const fetchPantry = createAsyncThunk("ingredients/fetchPantry", async () => {
+  const data = await apiGet("/me/pantry");
+  return (data.items || []).map((item: any) => ({
+    ...item,
+    name: item.rawName || item.canonicalName || "Unknown",
+    quantity: String(item.quantity || "1"),
+  })) as Ingredient[];
+});
+
+export const savePantry = createAsyncThunk("ingredients/savePantry", async () => {
+  // savePantry was used in V2 to bulk save local state.
+  // We now save immediately on add/remove, so this is a no-op to preserve UI compat.
+  return [];
+});
+
+export const addIngredient = createAsyncThunk(
+  "ingredients/addIngredient",
+  async (payload: AddIngredientPayload) => {
+    const data = await apiPost("/me/pantry", {
+      rawName: payload.name.trim(),
+      quantity: Number(payload.quantity) || 1,
+      unit: payload.unit || "pcs",
+      notes: payload.notes,
+      expiryDate: payload.expiryDate,
+    });
+    return {
+      ...data,
+      name: data.rawName || data.canonicalName || payload.name,
+      quantity: String(data.quantity || "1"),
+    } as Ingredient;
+  }
+);
+
+export const removeIngredient = createAsyncThunk(
+  "ingredients/removeIngredient",
+  async (id: string) => {
+    await apiDelete(`/me/pantry/${id}`);
+    return id;
+  }
+);
+
+export const cookRecipeThunk = createAsyncThunk(
+  "ingredients/cookRecipe",
+  async (payload: { recipeId?: number; ingredients?: any[]; servingsUsed?: number }, { dispatch }) => {
+    const data = await apiPost("/recipes/cook", payload);
+    // Fetch fresh pantry state after cook deductions
+    dispatch(fetchPantry());
+    return data;
+  }
+);
+
 export const categorizeIngredient = (name: string): string => {
   const lowerName = name.toLowerCase();
   
@@ -49,46 +100,6 @@ export const categorizeIngredient = (name: string): string => {
   return "Other";
 };
 
-export const fetchPantry = createAsyncThunk("ingredients/fetchPantry", async () => {
-  const token = localStorage.getItem("auth_token");
-  if (!token) throw new Error("Signed out.");
-  if (getAuthMode() === "local") {
-    return getLocalPantry();
-  }
-  const res = await fetch("/api/pantry/me", { method: "GET", headers: { Authorization: `Bearer ${token}` } });
-  const data = (await res.json().catch(() => ({}))) as { pantry?: unknown; items?: unknown; error?: unknown };
-  if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not load pantry.");
-  const pantry = Array.isArray(data.pantry) ? data.pantry : Array.isArray(data.items) ? data.items : [];
-  return pantry as Ingredient[];
-});
-
-export const savePantry = createAsyncThunk(
-  "ingredients/savePantry",
-  async (_, { getState }) => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) throw new Error("Signed out.");
-    const state = getState() as { ingredients: IngredientsState };
-    if (getAuthMode() === "local") {
-      return setLocalPantry(state.ingredients.items);
-    }
-    const res = await fetch("/api/pantry/me", {
-      method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ items: state.ingredients.items }),
-    });
-    const data = (await res.json().catch(() => ({}))) as { pantry?: unknown; items?: unknown; error?: unknown };
-    if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Could not save pantry.");
-    const pantry = Array.isArray(data.pantry) ? data.pantry : Array.isArray(data.items) ? data.items : null;
-    return (pantry ? (pantry as Ingredient[]) : state.ingredients.items) as Ingredient[];
-  },
-  {
-    condition: (_, { getState }) => {
-      const state = getState() as { ingredients: IngredientsState };
-      return state.ingredients.saveStatus !== "loading";
-    },
-  },
-);
-
 export const ingredientsSlice = createSlice({
   name: 'ingredients',
   initialState,
@@ -102,59 +113,6 @@ export const ingredientsSlice = createSlice({
       state.items = [];
       state.status = "idle";
       state.error = null;
-    },
-    addIngredient: (state, action: PayloadAction<AddIngredientPayload>) => {
-      if (!action.payload.name.trim()) return;
-      
-      const category = categorizeIngredient(action.payload.name);
-
-      let expiryDate = action.payload.expiryDate;
-      if (!expiryDate) {
-        const date = new Date();
-        let daysToAdd = 7;
-        
-        switch (category) {
-          case "Produce":
-            daysToAdd = 14;
-            break;
-          case "Dairy & Eggs":
-            daysToAdd = 14;
-            break;
-          case "Meat & Poultry":
-            daysToAdd = 4;
-            break;
-          case "Seafood":
-            daysToAdd = 3;
-            break;
-          case "Spices & Herbs":
-            daysToAdd = 365;
-            break;
-          case "Condiments & Oils":
-            daysToAdd = 180;
-            break;
-        }
-
-        if (action.payload.inFreezer) {
-          daysToAdd += 90;
-        }
-        
-        date.setDate(date.getDate() + daysToAdd);
-        expiryDate = date.toISOString().split('T')[0];
-      }
-
-      state.items.push({
-        id: crypto.randomUUID(),
-        name: action.payload.name.trim(),
-        quantity: action.payload.quantity?.trim() || "",
-        unit: action.payload.unit || "",
-        expiryDate: expiryDate,
-        notes: action.payload.notes?.trim() || "",
-        category: category,
-        inFreezer: action.payload.inFreezer,
-      });
-    },
-    removeIngredient: (state, action: PayloadAction<string>) => {
-      state.items = state.items.filter((item) => item.id !== action.payload);
     },
   },
   extraReducers: (builder) => {
@@ -173,22 +131,15 @@ export const ingredientsSlice = createSlice({
         state.error = action.error.message || "Could not load pantry.";
         state.items = [];
       })
-      .addCase(savePantry.pending, (state) => {
-        state.saveStatus = "loading";
-        state.saveError = null;
+      .addCase(addIngredient.fulfilled, (state, action) => {
+        state.items.push(action.payload);
       })
-      .addCase(savePantry.fulfilled, (state, action) => {
-        state.saveStatus = "succeeded";
-        state.items = action.payload;
-        state.saveError = null;
-      })
-      .addCase(savePantry.rejected, (state, action) => {
-        state.saveStatus = "failed";
-        state.saveError = action.error.message || "Could not save pantry.";
+      .addCase(removeIngredient.fulfilled, (state, action) => {
+        state.items = state.items.filter((item) => item.id !== action.payload);
       });
   },
 });
 
-export const { addIngredient, removeIngredient, setIngredients, clearIngredients } = ingredientsSlice.actions;
+export const { setIngredients, clearIngredients } = ingredientsSlice.actions;
 
 export default ingredientsSlice.reducer;

@@ -1,8 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import {
-  getRecipesByIngredients,
-  getRecipeInformation,
-} from "@/services/spoonacular";
+import { apiGet, apiPost } from "@/lib/api";
 import type { Recipe, AiRecipe, RecipeDetails, AppliedRecipeFilters } from "@/types";
 import type { RootState } from "../index";
 import { clearPreferences, fetchPreferences, setPreferences } from "./preferencesSlice";
@@ -53,20 +50,12 @@ export const fetchRecipes = createAsyncThunk(
     });
 
     const includeIngredients = sortedIngredients.map((i) => i.name);
-    const onboarding = state.preferences.onboarding;
-    const intolerances = onboarding?.allergies ?? [];
-    const excludeIngredients = onboarding?.customAvoid ?? [];
-    const dietaryPreference = onboarding?.dietaryPreference;
-    const goals = onboarding?.goals;
-
     const signature = createIngredientSignature(includeIngredients);
-    const result = await getRecipesByIngredients(
-      includeIngredients,
-      intolerances,
-      excludeIngredients,
-      { dietaryPreference, goals },
-    );
-    return { ...result, signature };
+    
+    // Backend will use the authenticated user's pantry implicitly and filter by their preferences
+    const result = await apiPost("/recipes/suggestions", { limit: 12 });
+    
+    return { recipes: result.recipes, applied: null, signature };
   },
   {
     condition: (_, { getState }) => {
@@ -82,29 +71,21 @@ export const fetchRecipes = createAsyncThunk(
 
 export const fetchAiRecipes = createAsyncThunk(
   "recipes/fetchAiRecipes",
-  async (_, { getState }) => {
+  async (_, { getState, dispatch }) => {
     const state = getState() as RootState;
     const ingredients = state.ingredients.items.map((i) => ({
       name: i.name,
       quantity: i.quantity || "unknown"
     }));
 
-    const response = await fetch("/api/recipes/aws", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ingredients }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to generate AI recipes: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const parsed = JSON.parse(data.text);
+    const data = await apiPost("/recipes/generate-list", { ingredients });
     const signature = createIngredientSignature(ingredients.map(i => i.name));
-    return { recipes: parsed.recipes, signature };
+    
+    data.recipes.forEach((r: any) => {
+      dispatch(generateAiRecipeImage({ title: r.title, description: r.finalDish || r.summary || "" }));
+    });
+    
+    return { recipes: data.recipes, signature };
   },
   {
     condition: (_, { getState }) => {
@@ -118,10 +99,18 @@ export const fetchAiRecipes = createAsyncThunk(
   },
 );
 
+export const generateAiRecipeImage = createAsyncThunk(
+  "recipes/generateAiRecipeImage",
+  async ({ title, description }: { title: string; description: string }) => {
+    const data = await apiPost("/recipes/generate-image", { title, description });
+    return { title, imageUrl: data.imageUrl };
+  }
+);
+
 export const fetchRecipeDetails = createAsyncThunk(
   "recipes/fetchDetails",
   async (id: number) => {
-    return await getRecipeInformation(id);
+    return await apiGet(`/recipes/${id}`);
   },
 );
 
@@ -141,8 +130,6 @@ const recipesSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Preferences affect recipe results (diet/allergies/goals). Invalidate the cached signature so
-      // navigating back to Recipes triggers a refetch even if the pantry hasn't changed.
       .addCase(fetchPreferences.fulfilled, (state) => {
         state.lastRecipeSignature = "";
       })
@@ -180,6 +167,12 @@ const recipesSlice = createSlice({
       .addCase(fetchAiRecipes.rejected, (state, action) => {
         state.aiStatus = "failed";
         state.aiError = action.error.message || "Failed to fetch AI recipes";
+      })
+      .addCase(generateAiRecipeImage.fulfilled, (state, action) => {
+        const recipe = state.aiRecipes.find(r => r.title === action.payload.title);
+        if (recipe && action.payload.imageUrl) {
+          recipe.imageUrl = action.payload.imageUrl;
+        }
       })
       .addCase(fetchRecipeDetails.pending, (state) => {
         state.detailsStatus = "loading";
